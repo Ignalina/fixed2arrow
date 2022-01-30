@@ -22,53 +22,23 @@ package impl
 import (
 	"github.com/apache/arrow/go/v7/arrow"
 	"github.com/apache/arrow/go/v7/arrow/array"
-	"github.com/apache/arrow/go/v7/arrow/arrio"
-	"github.com/apache/arrow/go/v7/arrow/ipc"
-	"github.com/apache/arrow/go/v7/arrow/memory"
-	"github.com/apache/arrow/go/v7/parquet/file"
-	"golang.org/x/xerrors"
+	"github.com/apache/arrow/go/v7/parquet"
+	"github.com/apache/arrow/go/v7/parquet/compress"
+	"github.com/apache/arrow/go/v7/parquet/pqarrow"
 	"io"
-	"os"
 )
 
-func saveToParquet(sc *arrow.Schema, table *array.TableReader, w io.Writer) {
+func SaveToParquet(fst *FixedSizeTable, writer io.Writer) error {
+	tbl := array.NewTableFromRecords(fst.Schema, fst.Records)
 
-	//parquet.WithCompression(compress.Codecs.Snappy)
+	i := int64(len(fst.TableChunks[0].Bytes))
 
-	pw := file.NewParquetWriter(w, nil)
+	props := parquet.NewWriterProperties(parquet.WithDictionaryDefault(false), parquet.WithCompression(compress.Codecs.Snappy))
+	arrProps := pqarrow.DefaultWriterProps()
 
-	print(pw)
+	return pqarrow.WriteTable(tbl, writer, i, props, arrProps)
 }
 
-func saveToFeather(table *array.TableReader) {
-}
+func saveToFeather(sc *arrow.Schema, table *array.TableReader, w io.Writer) {
 
-func processStream(w *os.File, r io.Reader) error {
-	mem := memory.NewGoAllocator()
-
-	rr, err := ipc.NewReader(r, ipc.WithAllocator(mem))
-	if err != nil {
-		if xerrors.Is(err, io.EOF) {
-			return nil
-		}
-		return err
-	}
-
-	ww, err := ipc.NewFileWriter(w, ipc.WithAllocator(mem), ipc.WithSchema(rr.Schema()))
-	if err != nil {
-		return xerrors.Errorf("could not create ARROW file writer: %w", err)
-	}
-	defer ww.Close()
-
-	_, err = arrio.Copy(ww, rr)
-	if err != nil {
-		return xerrors.Errorf("could not copy ARROW stream: %w", err)
-	}
-
-	err = ww.Close()
-	if err != nil {
-		return xerrors.Errorf("could not close output ARROW file: %w", err)
-	}
-
-	return nil
 }

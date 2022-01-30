@@ -24,6 +24,7 @@ import (
 	"github.com/apache/arrow/go/v7/arrow"
 	"github.com/ignalina/fixed2arrow/impl"
 	"os"
+
 	"time"
 )
 
@@ -34,7 +35,7 @@ import (
 func main() {
 	start := time.Now()
 
-	fullPath := "test.lastbig2"
+	fullPath := "test.last10"
 
 	fixedRow := createFixedRow()
 	fst, err := impl.CreateFixedSizeTableFromSlowDisk2(&fixedRow, fullPath, 8)
@@ -43,13 +44,14 @@ func main() {
 	}
 
 	var file *os.File
-	file, err = os.OpenFile(fullPath+".feather", os.O_RDWR, 0644)
+	file, err = os.OpenFile(fullPath+".parqet", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if impl.IsError(err) {
 		return
 	}
+
 	defer file.Close()
 
-	err = impl.SaveFeather(file, fst)
+	err = impl.SaveToParquet(fst, file)
 
 	elapsed := time.Since(start)
 	fmt.Println("elapesed total=", elapsed)
