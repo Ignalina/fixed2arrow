@@ -3,7 +3,7 @@ pipeline {
   stages {
     stage('compile') {
       steps {
-        sh 'go build'
+        sh 'go build fixed2arrow'
       }
     }
 
