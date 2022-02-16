@@ -38,20 +38,27 @@ func main() {
 	fullPath := "test.last10"
 
 	fixedRow := createFixedRow()
-	fst, err := impl.CreateFixedSizeTableFromSlowDisk2(&fixedRow, fullPath, 8)
+
+	file, err := os.Open(fullPath)
+	if err != nil {
+		return
+	}
+	defer file.Close()
+
+	fst, err := impl.CreateFixedSizeTableFromFile(&fixedRow, file, 8)
 	if nil != err {
 		fmt.Println("BAD!!!")
 	}
 
-	var file *os.File
+	var outFile *os.File
 	file, err = os.OpenFile(fullPath+".parqet", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if impl.IsError(err) {
 		return
 	}
 
-	defer file.Close()
+	defer outFile.Close()
 
-	err = impl.SaveToParquet(fst, file)
+	err = impl.SaveToParquet(fst, outFile)
 
 	elapsed := time.Since(start)
 	fmt.Println("elapesed total=", elapsed)

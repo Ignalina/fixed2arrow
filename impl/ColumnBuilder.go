@@ -103,14 +103,15 @@ func SaveFeather(w *os.File, fst *FixedSizeTable) error {
 }
 
 // Read chunks of file and process them in go route after each chunk read. Slow disk is non non zero disk like sans etc
-func CreateFixedSizeTableFromSlowDisk2(row *FixedRow, fileName string, cores int) (*FixedSizeTable, error) {
+func CreateFixedSizeTableFromFile(row *FixedRow, file *os.File, cores int) (*FixedSizeTable, error) {
 	var fst FixedSizeTable
 	fst.row = row
 	fst.mem = memory.NewGoAllocator()
 	fst.Schema = createSchemaFromFixedRow(row)
 
 	fst.wg = &sync.WaitGroup{}
-	ParalizeChunks(&fst, fileName, cores)
+
+	ParalizeChunks(&fst, file, cores)
 
 	//	defer tbl.Release()
 
@@ -203,12 +204,7 @@ func CreateColumBuilder(fixedField *FixedField, builder *array.RecordBuilder, co
 	return &result
 }
 
-func ParalizeChunks(fst *FixedSizeTable, filename string, core int) error {
-	file, err := os.Open(filename)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
+func ParalizeChunks(fst *FixedSizeTable, file *os.File, core int) error {
 	fi, _ := file.Stat()
 
 	fst.Bytes = make([]byte, fi.Size())
