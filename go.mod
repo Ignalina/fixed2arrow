@@ -3,7 +3,7 @@ module github.com/ignalina/fixed2arrow
 go 1.18
 
 require (
-	github.com/apache/arrow/go/v7 v7.0.0-20220129000617-fcab4814f658
+	github.com/apache/arrow/go/v7 v7.0.0
 	golang.org/x/text v0.3.7
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
 )
