@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"github.com/apache/arrow/go/v7/arrow"
 	"github.com/ignalina/fixed2arrow/impl"
+	"io"
 	"os"
 
 	"time"
@@ -39,19 +40,23 @@ func main() {
 
 	fixedRow := createFixedRow()
 
+	var reader *io.Reader
 	file, err := os.Open(fullPath)
+	fi, _ := file.Stat()
+
 	if err != nil {
 		return
 	}
 	defer file.Close()
+	*reader = file
 
-	fst, err := impl.CreateFixedSizeTableFromFile(&fixedRow, file, 8)
+	fst, err := impl.CreateFixedSizeTableFromFile(&fixedRow, reader, fi.Size(), 8)
 	if nil != err {
 		fmt.Println("BAD!!!")
 	}
 
 	var outFile *os.File
-	file, err = os.OpenFile(fullPath+".parqet", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	outFile, err = os.OpenFile(fullPath+".parqet", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if impl.IsError(err) {
 		return
 	}

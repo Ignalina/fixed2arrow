@@ -103,7 +103,7 @@ func SaveFeather(w *os.File, fst *FixedSizeTable) error {
 }
 
 // Read chunks of file and process them in go route after each chunk read. Slow disk is non non zero disk like sans etc
-func CreateFixedSizeTableFromFile(row *FixedRow, file *os.File, cores int) (*FixedSizeTable, error) {
+func CreateFixedSizeTableFromFile(row *FixedRow, reader *io.Reader, size int64, cores int) (*FixedSizeTable, error) {
 	var fst FixedSizeTable
 	fst.row = row
 	fst.mem = memory.NewGoAllocator()
@@ -111,7 +111,7 @@ func CreateFixedSizeTableFromFile(row *FixedRow, file *os.File, cores int) (*Fix
 
 	fst.wg = &sync.WaitGroup{}
 
-	ParalizeChunks(&fst, file, cores)
+	ParalizeChunks(&fst, reader, size, cores)
 
 	//	defer tbl.Release()
 
@@ -204,13 +204,12 @@ func CreateColumBuilder(fixedField *FixedField, builder *array.RecordBuilder, co
 	return &result
 }
 
-func ParalizeChunks(fst *FixedSizeTable, file *os.File, core int) error {
-	fi, _ := file.Stat()
+func ParalizeChunks(fst *FixedSizeTable, reader *io.Reader, size int64, core int) error {
 
-	fst.Bytes = make([]byte, fi.Size())
+	fst.Bytes = make([]byte, size)
 	fst.TableChunks = make([]FixedSizeTableChunk, core)
 
-	chunkSize := fi.Size() / int64(core)
+	chunkSize := size / int64(core)
 	rowlength := int64(fst.row.CalRowLength())
 
 	if chunkSize < int64(rowlength) {
@@ -233,7 +232,7 @@ func ParalizeChunks(fst *FixedSizeTable, file *os.File, core int) error {
 			i2 = len(fst.Bytes)
 		}
 		buf := fst.Bytes[i1:i2]
-		nread, _ := io.ReadFull(file, buf)
+		nread, _ := io.ReadFull(*reader, buf)
 		buf = buf[:nread]
 		goon = i2 < len(fst.Bytes)
 		p2 = i1 + findLastNL(buf)
