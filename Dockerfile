@@ -37,4 +37,4 @@ USER 1001
 WORKDIR /opt/bin
 COPY --from=builder /opt/app-root/src/github.com/ignalina/fixed2arrow/fixed2arrow-monolith /opt/bin/fixed2arrow-monolith
 
-CMD /opt/bin/go2arrow-monolith
+CMD /opt/bin/fixed2arrow-monolith
