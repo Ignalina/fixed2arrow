@@ -65,6 +65,87 @@ type FixedSizeTable struct {
 	Records     []arrow.Record
 }
 
+const columnsizeCap = 3000000
+
+var ColumnBuilders map[arrow.Type]func(fixedField *FixedField, builder *array.RecordBuilder, columnsize int, fieldNr int) *ColumnBuilder
+
+func init() {
+
+	ColumnBuilders = map[arrow.Type]func(fixedField *FixedField, builder *array.RecordBuilder, columnsize int, fieldNr int) *ColumnBuilder{
+		arrow.BinaryTypes.String.ID(): func(fixedField *FixedField, builder *array.RecordBuilder, columnsize int, fieldNr int) *ColumnBuilder {
+			var result ColumnBuilder
+			result = &ColumnBuilderString{fixedField: fixedField, recordBuilder: builder, values: make([]string, columnsize, columnsizeCap), fieldnr: fieldNr}
+			return &result
+		},
+		arrow.PrimitiveTypes.Date32.ID(): func(fixedField *FixedField, builder *array.RecordBuilder, columnsize int, fieldNr int) *ColumnBuilder {
+			var result ColumnBuilder
+			result = &ColumnBuilderDate32{fixedField: fixedField, recordBuilder: builder, values: make([]arrow.Date32, columnsize, columnsizeCap), fieldnr: fieldNr}
+			return &result
+		},
+		arrow.PrimitiveTypes.Date64.ID(): func(fixedField *FixedField, builder *array.RecordBuilder, columnsize int, fieldNr int) *ColumnBuilder {
+			var result ColumnBuilder
+			result = &ColumnBuilderDate64{fixedField: fixedField, recordBuilder: builder, values: make([]arrow.Date64, columnsize, columnsizeCap), fieldnr: fieldNr}
+			return &result
+		},
+		arrow.PrimitiveTypes.Int8.ID(): func(fixedField *FixedField, builder *array.RecordBuilder, columnsize int, fieldNr int) *ColumnBuilder {
+			var result ColumnBuilder
+			result = &ColumnBuilderInt8{fixedField: fixedField, recordBuilder: builder, values: make([]int8, columnsize, columnsizeCap), fieldnr: fieldNr}
+			return &result
+		},
+		arrow.PrimitiveTypes.Int16.ID(): func(fixedField *FixedField, builder *array.RecordBuilder, columnsize int, fieldNr int) *ColumnBuilder {
+			var result ColumnBuilder
+			result = &ColumnBuilderInt16{fixedField: fixedField, recordBuilder: builder, values: make([]int16, columnsize, columnsizeCap), fieldnr: fieldNr}
+			return &result
+		},
+		arrow.PrimitiveTypes.Int32.ID(): func(fixedField *FixedField, builder *array.RecordBuilder, columnsize int, fieldNr int) *ColumnBuilder {
+			var result ColumnBuilder
+			result = &ColumnBuilderInt32{fixedField: fixedField, recordBuilder: builder, values: make([]int32, columnsize, columnsizeCap), fieldnr: fieldNr}
+			return &result
+		},
+		arrow.PrimitiveTypes.Int64.ID(): func(fixedField *FixedField, builder *array.RecordBuilder, columnsize int, fieldNr int) *ColumnBuilder {
+			var result ColumnBuilder
+			result = &ColumnBuilderInt64{fixedField: fixedField, recordBuilder: builder, values: make([]int64, columnsize, columnsizeCap), fieldnr: fieldNr}
+			return &result
+		},
+		arrow.PrimitiveTypes.Uint8.ID(): func(fixedField *FixedField, builder *array.RecordBuilder, columnsize int, fieldNr int) *ColumnBuilder {
+			var result ColumnBuilder
+			result = &ColumnBuilderUint8{fixedField: fixedField, recordBuilder: builder, values: make([]uint8, columnsize, columnsizeCap), fieldnr: fieldNr}
+			return &result
+		},
+		arrow.PrimitiveTypes.Uint16.ID(): func(fixedField *FixedField, builder *array.RecordBuilder, columnsize int, fieldNr int) *ColumnBuilder {
+			var result ColumnBuilder
+			result = &ColumnBuilderUint16{fixedField: fixedField, recordBuilder: builder, values: make([]uint16, columnsize, columnsizeCap), fieldnr: fieldNr}
+			return &result
+		},
+		arrow.PrimitiveTypes.Uint32.ID(): func(fixedField *FixedField, builder *array.RecordBuilder, columnsize int, fieldNr int) *ColumnBuilder {
+			var result ColumnBuilder
+			result = &ColumnBuilderUint32{fixedField: fixedField, recordBuilder: builder, values: make([]uint32, columnsize, columnsizeCap), fieldnr: fieldNr}
+			return &result
+		},
+		arrow.PrimitiveTypes.Uint64.ID(): func(fixedField *FixedField, builder *array.RecordBuilder, columnsize int, fieldNr int) *ColumnBuilder {
+			var result ColumnBuilder
+			result = &ColumnBuilderUint64{fixedField: fixedField, recordBuilder: builder, values: make([]uint64, columnsize, columnsizeCap), fieldnr: fieldNr}
+			return &result
+		},
+		arrow.PrimitiveTypes.Float32.ID(): func(fixedField *FixedField, builder *array.RecordBuilder, columnsize int, fieldNr int) *ColumnBuilder {
+			var result ColumnBuilder
+			result = &ColumnBuilderFloat32{fixedField: fixedField, recordBuilder: builder, values: make([]float32, columnsize, columnsizeCap), fieldnr: fieldNr}
+			return &result
+		},
+		arrow.PrimitiveTypes.Float64.ID(): func(fixedField *FixedField, builder *array.RecordBuilder, columnsize int, fieldNr int) *ColumnBuilder {
+			var result ColumnBuilder
+			result = &ColumnBuilderFloat64{fixedField: fixedField, recordBuilder: builder, values: make([]float64, columnsize, columnsizeCap), fieldnr: fieldNr}
+			return &result
+		},
+		arrow.FixedWidthTypes.Boolean.ID(): func(fixedField *FixedField, builder *array.RecordBuilder, columnsize int, fieldNr int) *ColumnBuilder {
+			var result ColumnBuilder
+			result = &ColumnBuilderBoolean{fixedField: fixedField, recordBuilder: builder, values: make([]bool, columnsize, columnsizeCap), fieldnr: fieldNr}
+			return &result
+		},
+	}
+
+}
+
 func (f FixedRow) CalRowLength() int {
 	sum := 0
 
@@ -151,57 +232,7 @@ type ColumnBuilder interface {
 }
 
 func CreateColumBuilder(fixedField *FixedField, builder *array.RecordBuilder, columnsize int, fieldNr int) *ColumnBuilder {
-	var result ColumnBuilder
-	columnsize = 0
-	columnsizeCap := 3000000
-
-	switch fixedField.Field.Type.ID() {
-	//	case types.String.ID():
-	case arrow.BinaryTypes.String.ID():
-		result = &ColumnBuilderString{fixedField: fixedField, recordBuilder: builder, values: make([]string, columnsize, columnsizeCap), fieldnr: fieldNr}
-
-	case arrow.PrimitiveTypes.Date32.ID():
-		result = &ColumnBuilderDate32{fixedField: fixedField, recordBuilder: builder, values: make([]arrow.Date32, columnsize, columnsizeCap), fieldnr: fieldNr}
-
-	case arrow.PrimitiveTypes.Date64.ID():
-		result = &ColumnBuilderDate64{fixedField: fixedField, recordBuilder: builder, values: make([]arrow.Date64, columnsize, columnsizeCap), fieldnr: fieldNr}
-
-	case arrow.PrimitiveTypes.Int8.ID():
-		result = &ColumnBuilderInt8{fixedField: fixedField, recordBuilder: builder, values: make([]int8, columnsize, columnsizeCap), fieldnr: fieldNr}
-
-	case arrow.PrimitiveTypes.Int16.ID():
-		result = &ColumnBuilderInt16{fixedField: fixedField, recordBuilder: builder, values: make([]int16, columnsize, columnsizeCap), fieldnr: fieldNr}
-
-	case arrow.PrimitiveTypes.Int32.ID():
-		result = &ColumnBuilderInt32{fixedField: fixedField, recordBuilder: builder, values: make([]int32, columnsize, columnsizeCap), fieldnr: fieldNr}
-
-	case arrow.PrimitiveTypes.Int64.ID():
-		result = &ColumnBuilderInt64{fixedField: fixedField, recordBuilder: builder, values: make([]int64, columnsize, columnsizeCap), fieldnr: fieldNr}
-
-	case arrow.PrimitiveTypes.Uint8.ID():
-		result = &ColumnBuilderUint8{fixedField: fixedField, recordBuilder: builder, values: make([]uint8, columnsize, columnsizeCap), fieldnr: fieldNr}
-
-	case arrow.PrimitiveTypes.Uint16.ID():
-		result = &ColumnBuilderUint16{fixedField: fixedField, recordBuilder: builder, values: make([]uint16, columnsize, columnsizeCap), fieldnr: fieldNr}
-
-	case arrow.PrimitiveTypes.Uint32.ID():
-		result = &ColumnBuilderUint32{fixedField: fixedField, recordBuilder: builder, values: make([]uint32, columnsize, columnsizeCap), fieldnr: fieldNr}
-
-	case arrow.PrimitiveTypes.Uint64.ID():
-		result = &ColumnBuilderUint64{fixedField: fixedField, recordBuilder: builder, values: make([]uint64, columnsize, columnsizeCap), fieldnr: fieldNr}
-
-	case arrow.PrimitiveTypes.Float32.ID():
-		result = &ColumnBuilderFloat32{fixedField: fixedField, recordBuilder: builder, values: make([]float32, columnsize, columnsizeCap), fieldnr: fieldNr}
-
-	case arrow.PrimitiveTypes.Float64.ID():
-		result = &ColumnBuilderFloat64{fixedField: fixedField, recordBuilder: builder, values: make([]float64, columnsize, columnsizeCap), fieldnr: fieldNr}
-
-	case arrow.FixedWidthTypes.Boolean.ID():
-		result = &ColumnBuilderBoolean{fixedField: fixedField, recordBuilder: builder, values: make([]bool, columnsize, columnsizeCap), fieldnr: fieldNr}
-
-	}
-
-	return &result
+	return ColumnBuilders[fixedField.Field.Type.ID()](fixedField, builder, columnsize, fieldNr)
 }
 
 func ParalizeChunks(fst *FixedSizeTable, reader *io.Reader, size int64, core int) error {
