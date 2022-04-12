@@ -63,6 +63,10 @@ type FixedSizeTable struct {
 	Schema      *arrow.Schema
 	wg          *sync.WaitGroup
 	Records     []arrow.Record
+	Header      string
+	Footer      string
+	HasHeader   bool
+	HasFooter   bool
 }
 
 const columnsizeCap = 3000000
@@ -253,6 +257,7 @@ func ParalizeChunks(fst *FixedSizeTable, reader *io.Reader, size int64, core int
 	p2 := 0
 
 	for goon {
+		var headerChunk, footerChunk bool
 
 		fst.TableChunks[chunkNr] = FixedSizeTableChunk{fixedSizeTable: fst}
 		fst.TableChunks[chunkNr].createColumBuilders()
@@ -267,11 +272,19 @@ func ParalizeChunks(fst *FixedSizeTable, reader *io.Reader, size int64, core int
 		buf = buf[:nread]
 		goon = i2 < len(fst.Bytes)
 		p2 = i1 + findLastNL(buf)
-
 		fst.TableChunks[chunkNr].Bytes = fst.Bytes[p1:p2]
 		p1 = p2
+
+		if 0 == chunkNr && fst.HasHeader {
+			headerChunk = true
+		}
+
+		if fst.HasFooter && !goon {
+			footerChunk = true
+		}
+
 		fst.wg.Add(1)
-		fst.TableChunks[chunkNr].process()
+		fst.TableChunks[chunkNr].process(headerChunk, footerChunk)
 		fst.TableChunks[chunkNr].record = fst.TableChunks[chunkNr].recordBuilder.NewRecord()
 
 		chunkNr++
@@ -288,25 +301,21 @@ func ParalizeChunks(fst *FixedSizeTable, reader *io.Reader, size int64, core int
 	return nil
 }
 
-//func processChunk(gobuf []byte,wg *sync.WaitGroup) {
-func (fstc FixedSizeTableChunk) process() int {
+func (fstc FixedSizeTableChunk) process(lfHeader bool, lfFooter bool) int {
 
 	defer fstc.fixedSizeTable.wg.Done()
 	re := bytes.NewReader(fstc.Bytes)
 	decodingReader := transform.NewReader(re, charmap.ISO8859_1.NewDecoder()) //   lines := []string{}
-	//	lines := make([]string, 0, 8000000)
 
 	scanner := bufio.NewScanner(decodingReader)
 	lineCnt := 0
 	for scanner.Scan() {
 		line := scanner.Text()
-		if line[:12] == "************" {
-			fmt.Println("skipping footer")
-			break
+		if (lfHeader && 0 == lineCnt) {
+			fstc.fixedSizeTable.Header = line
 		}
-		lineCnt++
 
-		//		lines = append(lines, line)
+		lineCnt++
 		var columnPos int
 		for ci, cc := range fstc.fixedSizeTable.row.FixedField {
 			columString := line[columnPos : columnPos+cc.Len]
@@ -321,7 +330,6 @@ func (fstc FixedSizeTableChunk) process() int {
 	}
 
 	return lineCnt
-
 }
 
 var lo = &time.Location{}
