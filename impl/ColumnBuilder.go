@@ -56,17 +56,18 @@ type FixedSizeTableChunk struct {
 
 type FixedSizeTable struct {
 	// pointer to bytebuffer
-	Bytes       []byte
-	TableChunks []FixedSizeTableChunk
-	row         *FixedRow
-	mem         *memory.GoAllocator
-	Schema      *arrow.Schema
-	wg          *sync.WaitGroup
-	Records     []arrow.Record
-	Header      string
-	Footer      string
-	HasHeader   bool
-	HasFooter   bool
+	Bytes           []byte
+	TableChunks     []FixedSizeTableChunk
+	row             *FixedRow
+	mem             *memory.GoAllocator
+	Schema          *arrow.Schema
+	wg              *sync.WaitGroup
+	Records         []arrow.Record
+	Header          string
+	Footer          string
+	HasHeader       bool
+	HasFooter       bool
+	consumeLineFunc func(line string, fstc FixedSizeTableChunk)
 }
 
 const columnsizeCap = 3000000
@@ -189,10 +190,16 @@ func SaveFeather(w *os.File, fst *FixedSizeTable) error {
 
 // Read chunks of file and process them in go route after each chunk read. Slow disk is non non zero disk like sans etc
 func CreateFixedSizeTableFromFile(row *FixedRow, reader *io.Reader, size int64, cores int) (*FixedSizeTable, error) {
+	return CreateFixedSizeTableFromFileCustom(row, reader, size, cores, ConsumeLine)
+}
+
+func CreateFixedSizeTableFromFileCustom(row *FixedRow, reader *io.Reader, size int64, cores int, cs func(line string, fstc FixedSizeTableChunk)) (*FixedSizeTable, error) {
 	var fst FixedSizeTable
+
 	fst.row = row
 	fst.mem = memory.NewGoAllocator()
 	fst.Schema = createSchemaFromFixedRow(row)
+	fst.consumeLineFunc = cs
 
 	fst.wg = &sync.WaitGroup{}
 
@@ -311,17 +318,13 @@ func (fstc FixedSizeTableChunk) process(lfHeader bool, lfFooter bool) int {
 	lineCnt := 0
 	for scanner.Scan() {
 		line := scanner.Text()
-		if (lfHeader && 0 == lineCnt) {
+		if lfHeader && 0 == lineCnt {
 			fstc.fixedSizeTable.Header = line
 		}
 
 		lineCnt++
-		var columnPos int
-		for ci, cc := range fstc.fixedSizeTable.row.FixedField {
-			columString := line[columnPos : columnPos+cc.Len]
-			fstc.columnBuilders[ci].ParseValue(columString)
-			columnPos += cc.Len
-		}
+		fstc.fixedSizeTable.consumeLineFunc(line, fstc)
+		//		fstc.consumeLine(line)
 
 	}
 
@@ -330,6 +333,15 @@ func (fstc FixedSizeTableChunk) process(lfHeader bool, lfFooter bool) int {
 	}
 
 	return lineCnt
+}
+
+func ConsumeLine(line string, fstc FixedSizeTableChunk) {
+	var columnPos int
+	for ci, cc := range fstc.fixedSizeTable.row.FixedField {
+		columString := line[columnPos : columnPos+cc.Len]
+		fstc.columnBuilders[ci].ParseValue(columString)
+		columnPos += cc.Len
+	}
 }
 
 var lo = &time.Location{}
