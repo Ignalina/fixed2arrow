@@ -47,7 +47,7 @@ type FixedRow struct {
 }
 
 type FixedSizeTableChunk struct {
-	fixedSizeTable *FixedSizeTable
+	FixedSizeTable *FixedSizeTable
 	columnBuilders []ColumnBuilder
 	recordBuilder  *array.RecordBuilder
 	record         arrow.Record
@@ -58,7 +58,7 @@ type FixedSizeTable struct {
 	// pointer to bytebuffer
 	Bytes           []byte
 	TableChunks     []FixedSizeTableChunk
-	row             *FixedRow
+	Row             *FixedRow
 	mem             *memory.GoAllocator
 	Schema          *arrow.Schema
 	wg              *sync.WaitGroup
@@ -161,12 +161,12 @@ func (f FixedRow) CalRowLength() int {
 }
 
 func (f *FixedSizeTableChunk) createColumBuilders() bool {
-	f.columnBuilders = make([]ColumnBuilder, len(f.fixedSizeTable.row.FixedField))
+	f.columnBuilders = make([]ColumnBuilder, len(f.FixedSizeTable.Row.FixedField))
 
-	f.recordBuilder = array.NewRecordBuilder(f.fixedSizeTable.mem, f.fixedSizeTable.Schema)
+	f.recordBuilder = array.NewRecordBuilder(f.FixedSizeTable.mem, f.FixedSizeTable.Schema)
 	//	defer b.Release()
 
-	for i, ff := range f.fixedSizeTable.row.FixedField {
+	for i, ff := range f.FixedSizeTable.Row.FixedField {
 		f.columnBuilders[i] = *CreateColumBuilder(&ff, f.recordBuilder, ff.Len, i)
 	}
 	return true
@@ -196,7 +196,7 @@ func CreateFixedSizeTableFromFile(row *FixedRow, reader *io.Reader, size int64, 
 func CreateFixedSizeTableFromFileCustom(row *FixedRow, reader *io.Reader, size int64, cores int, cs func(line string, fstc FixedSizeTableChunk)) (*FixedSizeTable, error) {
 	var fst FixedSizeTable
 
-	fst.row = row
+	fst.Row = row
 	fst.mem = memory.NewGoAllocator()
 	fst.Schema = createSchemaFromFixedRow(row)
 	fst.consumeLineFunc = cs
@@ -252,7 +252,7 @@ func ParalizeChunks(fst *FixedSizeTable, reader *io.Reader, size int64, core int
 	fst.TableChunks = make([]FixedSizeTableChunk, core)
 
 	chunkSize := size / int64(core)
-	rowlength := int64(fst.row.CalRowLength())
+	rowlength := int64(fst.Row.CalRowLength())
 
 	if chunkSize < int64(rowlength) {
 		chunkSize = int64(rowlength)
@@ -266,7 +266,7 @@ func ParalizeChunks(fst *FixedSizeTable, reader *io.Reader, size int64, core int
 	for goon {
 		var headerChunk, footerChunk bool
 
-		fst.TableChunks[chunkNr] = FixedSizeTableChunk{fixedSizeTable: fst}
+		fst.TableChunks[chunkNr] = FixedSizeTableChunk{FixedSizeTable: fst}
 		fst.TableChunks[chunkNr].createColumBuilders()
 
 		i1 := int(chunkSize) * chunkNr
@@ -310,7 +310,7 @@ func ParalizeChunks(fst *FixedSizeTable, reader *io.Reader, size int64, core int
 
 func (fstc FixedSizeTableChunk) process(lfHeader bool, lfFooter bool) int {
 
-	defer fstc.fixedSizeTable.wg.Done()
+	defer fstc.FixedSizeTable.wg.Done()
 	re := bytes.NewReader(fstc.Bytes)
 	decodingReader := transform.NewReader(re, charmap.ISO8859_1.NewDecoder()) //   lines := []string{}
 
@@ -319,16 +319,16 @@ func (fstc FixedSizeTableChunk) process(lfHeader bool, lfFooter bool) int {
 	for scanner.Scan() {
 		line := scanner.Text()
 		if lfHeader && 0 == lineCnt {
-			fstc.fixedSizeTable.Header = line
+			fstc.FixedSizeTable.Header = line
 		}
 
 		lineCnt++
-		fstc.fixedSizeTable.consumeLineFunc(line, fstc)
+		fstc.FixedSizeTable.consumeLineFunc(line, fstc)
 		//		fstc.consumeLine(line)
 
 	}
 
-	for ci, _ := range fstc.fixedSizeTable.row.FixedField {
+	for ci, _ := range fstc.FixedSizeTable.Row.FixedField {
 		fstc.columnBuilders[ci].FinishColumn()
 	}
 
@@ -337,7 +337,7 @@ func (fstc FixedSizeTableChunk) process(lfHeader bool, lfFooter bool) int {
 
 func ConsumeLine(line string, fstc FixedSizeTableChunk) {
 	var columnPos int
-	for ci, cc := range fstc.fixedSizeTable.row.FixedField {
+	for ci, cc := range fstc.FixedSizeTable.Row.FixedField {
 		columString := line[columnPos : columnPos+cc.Len]
 		fstc.columnBuilders[ci].ParseValue(columString)
 		columnPos += cc.Len

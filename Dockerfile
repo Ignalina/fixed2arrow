@@ -1,7 +1,7 @@
 ########################################################
 # STEP 1 use a temporary image to build a static binary
 ########################################################
-FROM golang:1.17  AS builder
+FROM golang:1.18  AS builder
 
 # Pull build dependencies
 ENV GOPATH=$APP_ROOT
@@ -26,7 +26,7 @@ RUN go get -d github.com/alvaroloes/enumer && \
  github.com/ignalina/fixed2arrow
 
 
-FROM golang:1.17
+FROM alpine:3.15
 USER root
 
 RUN mkdir /app \
@@ -37,4 +37,4 @@ USER 1001
 WORKDIR /opt/bin
 COPY --from=builder /opt/app-root/src/github.com/ignalina/fixed2arrow/fixed2arrow-monolith /opt/bin/fixed2arrow-monolith
 
-CMD /opt/bin/go2arrow-monolith
+CMD /opt/bin/fixed2arrow-monolith
