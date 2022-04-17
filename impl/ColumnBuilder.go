@@ -67,7 +67,8 @@ type FixedSizeTable struct {
 	Footer          string
 	HasHeader       bool
 	HasFooter       bool
-	consumeLineFunc func(line string, fstc FixedSizeTableChunk)
+	ConsumeLineFunc func(line string, fstc FixedSizeTableChunk)
+	CustomParams    interface{}
 }
 
 const columnsizeCap = 3000000
@@ -199,7 +200,7 @@ func CreateFixedSizeTableFromFileCustom(row *FixedRow, reader *io.Reader, size i
 	fst.Row = row
 	fst.mem = memory.NewGoAllocator()
 	fst.Schema = createSchemaFromFixedRow(row)
-	fst.consumeLineFunc = cs
+	fst.ConsumeLineFunc = cs
 
 	fst.wg = &sync.WaitGroup{}
 
@@ -323,7 +324,7 @@ func (fstc FixedSizeTableChunk) process(lfHeader bool, lfFooter bool) int {
 		}
 
 		lineCnt++
-		fstc.FixedSizeTable.consumeLineFunc(line, fstc)
+		fstc.FixedSizeTable.ConsumeLineFunc(line, fstc)
 		//		fstc.consumeLine(line)
 
 	}
