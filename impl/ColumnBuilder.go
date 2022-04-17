@@ -192,7 +192,7 @@ func SaveFeather(w *os.File, fst *FixedSizeTable) error {
 // Read chunks of file and process them in go route after each chunk read. Slow disk is non non zero disk like sans etc
 
 func CreateFixedSizeTableFromFile(fst *FixedSizeTable, row *FixedRow, reader *io.Reader, size int64, cores int) error {
-	if nil != fst.ConsumeLineFunc {
+	if nil == fst.ConsumeLineFunc {
 		fst.ConsumeLineFunc = ConsumeLine
 	}
 
