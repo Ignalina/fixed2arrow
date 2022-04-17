@@ -50,7 +50,9 @@ func main() {
 	defer file.Close()
 	*reader = file
 
-	fst, err := impl.CreateFixedSizeTableFromFile(&fixedRow, reader, fi.Size(), 8)
+	var fst impl.FixedSizeTable
+
+	err = impl.CreateFixedSizeTableFromFile(&fst, &fixedRow, reader, fi.Size(), 8)
 	if nil != err {
 		fmt.Println("BAD!!!")
 	}
@@ -63,7 +65,7 @@ func main() {
 
 	defer outFile.Close()
 
-	err = impl.SaveToParquet(fst, outFile)
+	err = impl.SaveToParquet(&fst, outFile)
 
 	elapsed := time.Since(start)
 	fmt.Println("elapesed total=", elapsed)
