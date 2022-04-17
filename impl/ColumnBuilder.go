@@ -317,12 +317,13 @@ func (fstc FixedSizeTableChunk) process(lfHeader bool, lfFooter bool) int {
 	lineCnt := 0
 	for scanner.Scan() {
 		line := scanner.Text()
-		if lfHeader && 0 == lineCnt {
+		lineCnt++
+
+		if lfHeader && 1 == lineCnt {
 			fstc.FixedSizeTable.Header = line
 			continue
 		}
 
-		lineCnt++
 		fstc.FixedSizeTable.ConsumeLineFunc(line, fstc)
 		//		fstc.consumeLine(line)
 
@@ -330,6 +331,14 @@ func (fstc FixedSizeTableChunk) process(lfHeader bool, lfFooter bool) int {
 	// TODO check scanner.err()
 	for ci, _ := range fstc.FixedSizeTable.Row.FixedField {
 		fstc.ColumnBuilders[ci].FinishColumn()
+	}
+
+	if lfHeader {
+		lineCnt--
+	}
+
+	if lfFooter {
+		lineCnt--
 	}
 
 	return lineCnt
