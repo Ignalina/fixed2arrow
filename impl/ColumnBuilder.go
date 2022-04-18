@@ -27,6 +27,7 @@ import (
 	"github.com/apache/arrow/go/v7/arrow/array"
 	"github.com/apache/arrow/go/v7/arrow/ipc"
 	"github.com/apache/arrow/go/v7/arrow/memory"
+	"golang.org/x/exp/maps"
 	"golang.org/x/text/encoding/charmap"
 	"golang.org/x/text/transform"
 	"golang.org/x/xerrors"
@@ -56,19 +57,20 @@ type FixedSizeTableChunk struct {
 
 type FixedSizeTable struct {
 	// pointer to bytebuffer
-	Bytes           []byte
-	TableChunks     []FixedSizeTableChunk
-	Row             *FixedRow
-	mem             *memory.GoAllocator
-	Schema          *arrow.Schema
-	wg              *sync.WaitGroup
-	Records         []arrow.Record
-	Header          string
-	Footer          string
-	HasHeader       bool
-	HasFooter       bool
-	ConsumeLineFunc func(line string, fstc FixedSizeTableChunk)
-	CustomParams    interface{}
+	Bytes                []byte
+	TableChunks          []FixedSizeTableChunk
+	Row                  *FixedRow
+	mem                  *memory.GoAllocator
+	Schema               *arrow.Schema
+	wg                   *sync.WaitGroup
+	Records              []arrow.Record
+	Header               string
+	Footer               string
+	HasHeader            bool
+	HasFooter            bool
+	ConsumeLineFunc      func(line string, fstc FixedSizeTableChunk)
+	CustomParams         interface{}
+	CustomColumnBuilders map[arrow.Type]func(fixedField *FixedField, builder *array.RecordBuilder, columnsize int, fieldNr int) *ColumnBuilder
 }
 
 const columnsizeCap = 3000000
@@ -149,7 +151,6 @@ func init() {
 			return &result
 		},
 	}
-
 }
 
 func (f FixedRow) CalRowLength() int {
@@ -194,6 +195,10 @@ func SaveFeather(w *os.File, fst *FixedSizeTable) error {
 func CreateFixedSizeTableFromFile(fst *FixedSizeTable, row *FixedRow, reader *io.Reader, size int64, cores int) error {
 	if nil == fst.ConsumeLineFunc {
 		fst.ConsumeLineFunc = ConsumeLine
+	}
+
+	if nil != fst.CustomColumnBuilders {
+		maps.Copy(ColumnBuilders, fst.CustomColumnBuilders)
 	}
 
 	fst.Row = row
