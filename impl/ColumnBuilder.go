@@ -245,6 +245,7 @@ func findLastNL(bytes []byte) int {
 type ColumnBuilder interface {
 	ParseValue(name string) bool
 	FinishColumn() bool
+	Nullify()
 }
 
 func CreateColumBuilder(fixedField *FixedField, builder *array.RecordBuilder, columnsize int, fieldNr int) *ColumnBuilder {

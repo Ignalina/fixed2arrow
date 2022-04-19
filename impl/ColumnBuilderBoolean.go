@@ -28,6 +28,7 @@ type ColumnBuilderBoolean struct {
 	recordBuilder *array.RecordBuilder
 	fieldnr       int
 	values        []bool
+	valid         []bool
 }
 
 // make configurable
@@ -58,13 +59,23 @@ func (c *ColumnBuilderBoolean) ParseValue(name string) bool {
 	case uint8('n'):
 		ourBool = false
 		break
+	default:
+		c.values = append(c.values, ourBool)
+		c.valid = append(c.valid, false)
+		return false
 	}
 
 	c.values = append(c.values, ourBool)
+	c.valid = append(c.valid, true)
 	return true
 }
-func (c *ColumnBuilderBoolean) FinishColumn() bool {
-	c.recordBuilder.Field(c.fieldnr).(*array.BooleanBuilder).AppendValues(c.values, nil)
 
+func (c *ColumnBuilderBoolean) FinishColumn() bool {
+	c.recordBuilder.Field(c.fieldnr).(*array.BooleanBuilder).AppendValues(c.values, c.valid)
 	return true
+}
+
+func (c *ColumnBuilderBoolean) Nullify() {
+	c.values = append(c.values, false)
+	c.valid = append(c.valid, false)
 }

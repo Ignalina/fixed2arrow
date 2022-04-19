@@ -29,6 +29,7 @@ type ColumnBuilderDate64 struct {
 	recordBuilder *array.RecordBuilder
 	fieldnr       int
 	values        []arrow.Date64
+	valid         []bool
 }
 
 func (c *ColumnBuilderDate64) ParseValue(name string) bool {
@@ -39,11 +40,17 @@ func (c *ColumnBuilderDate64) ParseValue(name string) bool {
 		result = false
 	}
 	c.values = append(c.values, arrow.Date64(t))
+	c.valid = append(c.valid, true)
+
 	return result
 }
 
 func (c *ColumnBuilderDate64) FinishColumn() bool {
-	c.recordBuilder.Field(c.fieldnr).(*array.Date64Builder).AppendValues(c.values, nil)
-
+	c.recordBuilder.Field(c.fieldnr).(*array.Date64Builder).AppendValues(c.values, c.valid)
 	return true
+}
+
+func (c *ColumnBuilderDate64) Nullify() {
+	c.values = append(c.values, 0)
+	c.valid = append(c.valid, false)
 }

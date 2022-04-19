@@ -29,16 +29,22 @@ type ColumnBuilderFloat32 struct {
 	recordBuilder *array.RecordBuilder
 	fieldnr       int
 	values        []float32
+	valid         []bool
 }
 
 func (c *ColumnBuilderFloat32) ParseValue(name string) bool {
 	u, _ := strconv.ParseFloat(name, 64)
 	c.values = append(c.values, float32(u))
+	c.valid = append(c.valid, true)
 	return true
 }
 
 func (c *ColumnBuilderFloat32) FinishColumn() bool {
-	c.recordBuilder.Field(c.fieldnr).(*array.Float32Builder).AppendValues(c.values, nil)
-
+	c.recordBuilder.Field(c.fieldnr).(*array.Float32Builder).AppendValues(c.values, c.valid)
 	return true
+}
+
+func (c *ColumnBuilderFloat32) Nullify() {
+	c.values = append(c.values, 0)
+	c.valid = append(c.valid, false)
 }

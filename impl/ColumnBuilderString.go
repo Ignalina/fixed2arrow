@@ -28,16 +28,23 @@ type ColumnBuilderString struct {
 	recordBuilder *array.RecordBuilder
 	fieldnr       int
 	values        []string
+	valid         []bool
 }
 
 func (c *ColumnBuilderString) ParseValue(name string) bool {
 
 	c.values = append(c.values, name)
+	c.valid = append(c.valid, true)
+
 	return true
 }
 
 func (c *ColumnBuilderString) FinishColumn() bool {
-	c.recordBuilder.Field(c.fieldnr).(*array.StringBuilder).AppendValues(c.values, nil)
-
+	c.recordBuilder.Field(c.fieldnr).(*array.StringBuilder).AppendValues(c.values, c.valid)
 	return true
+}
+
+func (c *ColumnBuilderString) Nullify() {
+	c.values = append(c.values, "")
+	c.valid = append(c.valid, false)
 }

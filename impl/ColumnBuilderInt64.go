@@ -29,18 +29,23 @@ type ColumnBuilderInt64 struct {
 	recordBuilder *array.RecordBuilder
 	fieldnr       int
 	values        []int64
+	valid         []bool
 }
 
 func (c *ColumnBuilderInt64) ParseValue(name string) bool {
 
 	i, _ := strconv.ParseInt(name, 10, 64)
 	c.values = append(c.values, i)
-
+	c.valid = append(c.valid, true)
 	return true
 }
 
 func (c *ColumnBuilderInt64) FinishColumn() bool {
-	c.recordBuilder.Field(c.fieldnr).(*array.Int64Builder).AppendValues(c.values, nil)
-
+	c.recordBuilder.Field(c.fieldnr).(*array.Int64Builder).AppendValues(c.values, c.valid)
 	return true
+}
+
+func (c *ColumnBuilderInt64) Nullify() {
+	c.values = append(c.values, 0)
+	c.valid = append(c.valid, false)
 }
