@@ -39,8 +39,9 @@ import (
 )
 
 type FixedField struct {
-	Len   int
-	Field arrow.Field
+	Len         int
+	DestinField arrow.Field
+	SourceType  arrow.DataType
 }
 
 type FixedRow struct {
@@ -219,7 +220,7 @@ func createSchemaFromFixedRow(row *FixedRow) *arrow.Schema {
 	fields = make([]arrow.Field, len(row.FixedField))
 
 	for index, element := range row.FixedField {
-		fields[index] = element.Field
+		fields[index] = element.DestinField
 	}
 	return arrow.NewSchema(fields, nil)
 }
@@ -247,7 +248,7 @@ type ColumnBuilder interface {
 }
 
 func CreateColumBuilder(fixedField *FixedField, builder *array.RecordBuilder, columnsize int, fieldNr int) *ColumnBuilder {
-	return ColumnBuilders[fixedField.Field.Type.ID()](fixedField, builder, columnsize, fieldNr)
+	return ColumnBuilders[fixedField.DestinField.Type.ID()](fixedField, builder, columnsize, fieldNr)
 }
 
 func ParalizeChunks(fst *FixedSizeTable, reader *io.Reader, size int64, core int) error {
