@@ -248,7 +248,7 @@ type ColumnBuilder interface {
 }
 
 func CreateColumBuilder(fixedField *FixedField, builder *array.RecordBuilder, columnsize int, fieldNr int) *ColumnBuilder {
-	return ColumnBuilders[fixedField.DestinField.Type.ID()](fixedField, builder, columnsize, fieldNr)
+	return ColumnBuilders[fixedField.SourceType.ID()](fixedField, builder, columnsize, fieldNr)
 }
 
 func ParalizeChunks(fst *FixedSizeTable, reader *io.Reader, size int64, core int) error {
