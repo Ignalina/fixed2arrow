@@ -76,8 +76,8 @@ func main() {
 func createFixedRow() impl.FixedRow {
 	result := impl.FixedRow{
 		[]impl.FixedField{
-			impl.FixedField{11, arrow.Field{Name: "idnr", Type: arrow.PrimitiveTypes.Int64}},
-			impl.FixedField{20, arrow.Field{Name: "description", Type: arrow.BinaryTypes.String}},
+			impl.FixedField{11, arrow.Field{Name: "idnr", Type: arrow.PrimitiveTypes.Int64}, arrow.PrimitiveTypes.Int64},
+			impl.FixedField{20, arrow.Field{Name: "description", Type: arrow.BinaryTypes.String}, arrow.BinaryTypes.String},
 		},
 	}
 	return result
