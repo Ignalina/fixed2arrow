@@ -233,7 +233,7 @@ func findLastNL(bytes []byte) int {
 	}
 
 	for p2 > 0 {
-		if bytes[p2-1] == 0x0d && bytes[p2] == 0x0a {
+		if p2 < len(bytes) && bytes[p2-1] == 0x0d && bytes[p2] == 0x0a {
 			return p2 + 1
 		}
 		p2--
