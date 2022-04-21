@@ -297,7 +297,7 @@ func ParalizeChunks(fst *FixedSizeTable, reader *io.Reader, size int64, core int
 		}
 
 		fst.wg.Add(1)
-		fst.TableChunks[chunkNr].process(headerChunk, footerChunk)
+		go fst.TableChunks[chunkNr].process(headerChunk, footerChunk)
 		fst.TableChunks[chunkNr].Record = fst.TableChunks[chunkNr].RecordBuilder.NewRecord()
 
 		chunkNr++
