@@ -317,7 +317,18 @@ func ParalizeChunks(fst *FixedSizeTable, reader *io.Reader, size int64, core int
 func (fstc FixedSizeTableChunk) process(lfHeader bool, lfFooter bool) int {
 
 	defer fstc.FixedSizeTable.wg.Done()
-	re := bytes.NewReader(fstc.Bytes)
+
+	var bbb []byte
+
+	if lfFooter {
+		p := findLastNL(fstc.Bytes)
+		bbb = fstc.Bytes[0:p]
+		fstc.FixedSizeTable.Footer = string(fstc.Bytes[:p])
+	} else {
+		bbb = fstc.Bytes
+	}
+
+	re := bytes.NewReader(bbb)
 	decodingReader := transform.NewReader(re, charmap.ISO8859_1.NewDecoder()) //   lines := []string{}
 
 	scanner := bufio.NewScanner(decodingReader)
