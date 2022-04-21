@@ -323,7 +323,7 @@ func (fstc FixedSizeTableChunk) process(lfHeader bool, lfFooter bool) int {
 	if lfFooter {
 		p := findLastNL(fstc.Bytes)
 		bbb = fstc.Bytes[0:p]
-		fstc.FixedSizeTable.Footer = string(fstc.Bytes[:p])
+		fstc.FixedSizeTable.Footer = string(fstc.Bytes[p:])
 	} else {
 		bbb = fstc.Bytes
 	}
