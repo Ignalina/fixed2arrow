@@ -298,7 +298,6 @@ func ParalizeChunks(fst *FixedSizeTable, reader *io.Reader, size int64, core int
 
 		fst.wg.Add(1)
 		go fst.TableChunks[chunkNr].process(headerChunk, footerChunk)
-		fst.TableChunks[chunkNr].Record = fst.TableChunks[chunkNr].RecordBuilder.NewRecord()
 
 		chunkNr++
 	}
@@ -358,6 +357,8 @@ func (fstc FixedSizeTableChunk) process(lfHeader bool, lfFooter bool) int {
 	if lfFooter {
 		lineCnt--
 	}
+
+	fstc.Record = fstc.RecordBuilder.NewRecord()
 
 	return lineCnt
 }
