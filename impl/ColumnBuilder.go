@@ -69,7 +69,7 @@ type FixedSizeTable struct {
 	Footer               string
 	HasHeader            bool
 	HasFooter            bool
-	ConsumeLineFunc      func(line string, fstc FixedSizeTableChunk)
+	ConsumeLineFunc      func(line string, fstc *FixedSizeTableChunk)
 	CustomParams         interface{}
 	CustomColumnBuilders map[arrow.Type]func(fixedField *FixedField, builder *array.RecordBuilder, columnsize int, fieldNr int) *ColumnBuilder
 }
@@ -313,7 +313,7 @@ func ParalizeChunks(fst *FixedSizeTable, reader *io.Reader, size int64, core int
 	return nil
 }
 
-func (fstc FixedSizeTableChunk) process(lfHeader bool, lfFooter bool) int {
+func (fstc *FixedSizeTableChunk) process(lfHeader bool, lfFooter bool) int {
 
 	defer fstc.FixedSizeTable.wg.Done()
 
@@ -363,7 +363,7 @@ func (fstc FixedSizeTableChunk) process(lfHeader bool, lfFooter bool) int {
 	return lineCnt
 }
 
-func ConsumeLine(line string, fstc FixedSizeTableChunk) {
+func ConsumeLine(line string, fstc *FixedSizeTableChunk) {
 	var columnPos int
 	for ci, cc := range fstc.FixedSizeTable.Row.FixedField {
 		columString := line[columnPos : columnPos+cc.Len]
