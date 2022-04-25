@@ -26,9 +26,12 @@ import (
 	"github.com/apache/arrow/go/v7/parquet/compress"
 	"github.com/apache/arrow/go/v7/parquet/pqarrow"
 	"io"
+	"time"
 )
 
 func SaveToParquet(fst *FixedSizeTable, writer io.Writer) error {
+	startWaitDoneExport := time.Now()
+
 	tbl := array.NewTableFromRecords(fst.Schema, fst.Records)
 
 	i := int64(len(fst.TableChunks[0].Bytes))
@@ -36,7 +39,9 @@ func SaveToParquet(fst *FixedSizeTable, writer io.Writer) error {
 	props := parquet.NewWriterProperties(parquet.WithDictionaryDefault(false), parquet.WithCompression(compress.Codecs.Snappy))
 	arrProps := pqarrow.DefaultWriterProps()
 
-	return pqarrow.WriteTable(tbl, writer, i, props, arrProps)
+	err := pqarrow.WriteTable(tbl, writer, i, props, arrProps)
+	fst.DurationDoneExport = time.Since(startWaitDoneExport)
+	return err
 }
 
 func saveToFeather(sc *arrow.Schema, table *array.TableReader, w io.Writer) {
