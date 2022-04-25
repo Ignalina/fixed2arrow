@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	github.com/apache/arrow/go/v7 v7.0.0
+	github.com/inhies/go-bytesize v0.0.0-20220417184213-4913239db9cf
 	golang.org/x/exp v0.0.0-20220414153411-bcd21879b8fd
 	golang.org/x/text v0.3.7
 	golang.org/x/xerrors v0.0.0-20220411194840-2f41105eb62f

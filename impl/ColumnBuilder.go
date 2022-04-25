@@ -49,11 +49,17 @@ type FixedRow struct {
 }
 
 type FixedSizeTableChunk struct {
+	Chunkr         int
 	FixedSizeTable *FixedSizeTable
 	ColumnBuilders []ColumnBuilder
 	RecordBuilder  *array.RecordBuilder
 	Record         arrow.Record
 	Bytes          []byte
+
+	LinesParsed       int
+	DurationReadChunk time.Duration
+	DurationToArrow   time.Duration
+	DurationToExport  time.Duration
 }
 
 type FixedSizeTable struct {
@@ -72,6 +78,13 @@ type FixedSizeTable struct {
 	ConsumeLineFunc      func(line string, fstc *FixedSizeTableChunk)
 	CustomParams         interface{}
 	CustomColumnBuilders map[arrow.Type]func(fixedField *FixedField, builder *array.RecordBuilder, columnsize int, fieldNr int) *ColumnBuilder
+
+	Cores              int
+	LinesParsed        int
+	DurationReadChunk  time.Duration
+	DurationToArrow    time.Duration
+	DurationToExport   time.Duration
+	DurationDoneExport time.Duration
 }
 
 const columnsizeCap = 3000000
@@ -272,7 +285,7 @@ func ParalizeChunks(fst *FixedSizeTable, reader *io.Reader, size int64, core int
 	for goon {
 		var headerChunk, footerChunk bool
 
-		fst.TableChunks[chunkNr] = FixedSizeTableChunk{FixedSizeTable: fst}
+		fst.TableChunks[chunkNr] = FixedSizeTableChunk{FixedSizeTable: fst, Chunkr: chunkNr}
 		fst.TableChunks[chunkNr].createColumBuilders()
 
 		i1 := int(chunkSize) * chunkNr
@@ -281,7 +294,9 @@ func ParalizeChunks(fst *FixedSizeTable, reader *io.Reader, size int64, core int
 			i2 = len(fst.Bytes)
 		}
 		buf := fst.Bytes[i1:i2]
+		startReadChunk := time.Now()
 		nread, _ := io.ReadFull(*reader, buf)
+		fst.TableChunks[chunkNr].DurationReadChunk = time.Since(startReadChunk)
 		buf = buf[:nread]
 		goon = i2 < len(fst.Bytes)
 		p2 = i1 + findLastNL(buf)
@@ -310,11 +325,19 @@ func ParalizeChunks(fst *FixedSizeTable, reader *io.Reader, size int64, core int
 		fst.Records[i] = num.Record
 	}
 
+	// Sum up some statitics
+	for _, tableChunk := range fst.TableChunks {
+		fst.DurationToArrow += tableChunk.DurationToArrow
+		fst.DurationReadChunk += tableChunk.DurationReadChunk
+		fst.DurationToExport += tableChunk.DurationToExport
+		fst.LinesParsed += tableChunk.LinesParsed
+	}
+
 	return nil
 }
 
 func (fstc *FixedSizeTableChunk) process(lfHeader bool, lfFooter bool) int {
-
+	startToArrow := time.Now()
 	defer fstc.FixedSizeTable.wg.Done()
 
 	var bbb []byte
@@ -360,6 +383,8 @@ func (fstc *FixedSizeTableChunk) process(lfHeader bool, lfFooter bool) int {
 
 	fstc.Record = fstc.RecordBuilder.NewRecord()
 
+	fstc.LinesParsed = lineCnt
+	fstc.DurationToArrow = time.Since(startToArrow)
 	return lineCnt
 }
 
