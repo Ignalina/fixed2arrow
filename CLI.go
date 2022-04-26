@@ -51,8 +51,9 @@ func main() {
 	*reader = file
 
 	var fst impl.FixedSizeTable
-
-	err = impl.CreateFixedSizeTableFromFile(&fst, &fixedRow, reader, fi.Size(), 8)
+	fst.Cores = 8
+	fst.ColumnsizeCap = 3000000 / fst.Cores
+	err = impl.CreateFixedSizeTableFromFile(&fst, &fixedRow, reader, fi.Size(), fst.Cores)
 	if nil != err {
 		fmt.Println("BAD!!!")
 	}
