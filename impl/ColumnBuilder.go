@@ -42,6 +42,7 @@ type FixedField struct {
 	Len         int
 	DestinField arrow.Field
 	SourceType  arrow.DataType
+	TableId     int
 }
 
 type FixedRow struct {
@@ -52,8 +53,8 @@ type FixedSizeTableChunk struct {
 	Chunkr         int
 	FixedSizeTable *FixedSizeTable
 	ColumnBuilders []ColumnBuilder
-	RecordBuilder  *array.RecordBuilder
-	Record         arrow.Record
+	RecordBuilder  []*array.RecordBuilder
+	Record         []arrow.Record
 	Bytes          []byte
 
 	LinesParsed       int
@@ -68,9 +69,9 @@ type FixedSizeTable struct {
 	TableChunks          []FixedSizeTableChunk
 	Row                  *FixedRow
 	mem                  *memory.GoAllocator
-	Schema               *arrow.Schema
+	Schema               []arrow.Schema
 	wg                   *sync.WaitGroup
-	Records              []arrow.Record
+	Records              [][]arrow.Record
 	Header               string
 	Footer               string
 	HasHeader            bool
@@ -180,11 +181,11 @@ func (f FixedRow) CalRowLength() int {
 func (f *FixedSizeTableChunk) createColumBuilders() bool {
 	f.ColumnBuilders = make([]ColumnBuilder, len(f.FixedSizeTable.Row.FixedField))
 
-	f.RecordBuilder = array.NewRecordBuilder(f.FixedSizeTable.mem, f.FixedSizeTable.Schema)
+	f.RecordBuilder[0] = array.NewRecordBuilder(f.FixedSizeTable.mem, &f.FixedSizeTable.Schema[0])
 	//	defer b.Release()
 
 	for i, ff := range f.FixedSizeTable.Row.FixedField {
-		f.ColumnBuilders[i] = *CreateColumBuilder(&ff, f.RecordBuilder, ff.Len, i, f.FixedSizeTable.ColumnsizeCap)
+		f.ColumnBuilders[i] = *CreateColumBuilder(&ff, f.RecordBuilder[0], ff.Len, i, f.FixedSizeTable.ColumnsizeCap)
 	}
 	return true
 }
@@ -192,7 +193,7 @@ func (f *FixedSizeTableChunk) createColumBuilders() bool {
 func SaveFeather(w *os.File, fst *FixedSizeTable) error {
 	mem := memory.NewGoAllocator()
 
-	tbl := array.NewTableFromRecords(fst.Schema, fst.Records)
+	tbl := array.NewTableFromRecords(&fst.Schema[0], fst.Records[0])
 	rr := array.NewTableReader(tbl, 1010000)
 
 	ww, err := ipc.NewFileWriter(w, ipc.WithAllocator(mem), ipc.WithSchema(rr.Schema()))
@@ -218,7 +219,7 @@ func CreateFixedSizeTableFromFile(fst *FixedSizeTable, row *FixedRow, reader *io
 
 	fst.Row = row
 	fst.mem = memory.NewGoAllocator()
-	fst.Schema = createSchemaFromFixedRow(row)
+	fst.Schema = nil //  TODO createSchemaFromFixedRow(row)
 
 	fst.wg = &sync.WaitGroup{}
 
@@ -320,10 +321,11 @@ func ParalizeChunks(fst *FixedSizeTable, reader *io.Reader, size int64, core int
 	fst.wg.Wait()
 
 	//	var r []array.Record=make([]array.Record, len(fst.TableChunks))
-	fst.Records = make([]arrow.Record, len(fst.TableChunks))
+	fst.Records[0] = make([]arrow.Record, len(fst.TableChunks))
 
 	for i, num := range fst.TableChunks {
-		fst.Records[i] = num.Record
+		fst.Records[i][0] = num.Record[0] // TODO
+
 	}
 
 	// Sum up some statitics
@@ -382,7 +384,7 @@ func (fstc *FixedSizeTableChunk) process(lfHeader bool, lfFooter bool) int {
 		lineCnt--
 	}
 
-	fstc.Record = fstc.RecordBuilder.NewRecord()
+	fstc.Record[0] = fstc.RecordBuilder[0].NewRecord()
 
 	fstc.LinesParsed = lineCnt
 	fstc.DurationToArrow = time.Since(startToArrow)

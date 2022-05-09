@@ -32,7 +32,7 @@ import (
 func SaveToParquet(fst *FixedSizeTable, writer io.Writer) error {
 	startWaitDoneExport := time.Now()
 
-	tbl := array.NewTableFromRecords(fst.Schema, fst.Records)
+	tbl := array.NewTableFromRecords(&fst.Schema[0], fst.Records[0])
 
 	i := int64(len(fst.TableChunks[0].Bytes))
 
