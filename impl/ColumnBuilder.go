@@ -72,6 +72,7 @@ type FixedSizeTable struct {
 	Schema               []arrow.Schema
 	wg                   *sync.WaitGroup
 	Records              [][]arrow.Record
+	TableColAmount       []int
 	Header               string
 	Footer               string
 	HasHeader            bool
@@ -181,11 +182,23 @@ func (f FixedRow) CalRowLength() int {
 func (f *FixedSizeTableChunk) createColumBuilders() bool {
 	f.ColumnBuilders = make([]ColumnBuilder, len(f.FixedSizeTable.Row.FixedField))
 
-	f.RecordBuilder[0] = array.NewRecordBuilder(f.FixedSizeTable.mem, &f.FixedSizeTable.Schema[0])
-	//	defer b.Release()
+	f.RecordBuilder = make([]*array.RecordBuilder, len(f.FixedSizeTable.Schema))
+
+	for i := 0; i < len(f.FixedSizeTable.TableColAmount); i++ {
+		f.RecordBuilder[i] = array.NewRecordBuilder(f.FixedSizeTable.mem, &f.FixedSizeTable.Schema[i])
+	}
+	index := -1
+	tca := 0
 
 	for i, ff := range f.FixedSizeTable.Row.FixedField {
-		f.ColumnBuilders[i] = *CreateColumBuilder(&ff, f.RecordBuilder[0], ff.Len, i, f.FixedSizeTable.ColumnsizeCap)
+		if (0 == tca) {
+			index++
+			tca = f.FixedSizeTable.TableColAmount[index]
+		}
+		tca--
+
+		f.ColumnBuilders[i] = *CreateColumBuilder(&ff, f.RecordBuilder[index], ff.Len, i, f.FixedSizeTable.ColumnsizeCap)
+
 	}
 	return true
 }
@@ -209,6 +222,10 @@ func SaveFeather(w *os.File, fst *FixedSizeTable) error {
 // Read chunks of file and process them in go route after each chunk read. Slow disk is non non zero disk like sans etc
 
 func CreateFixedSizeTableFromFile(fst *FixedSizeTable, row *FixedRow, reader *io.Reader, size int64, cores int) error {
+	if nil == fst.TableColAmount {
+		fst.TableColAmount = []int{len(row.FixedField)}
+	}
+
 	if nil == fst.ConsumeLineFunc {
 		fst.ConsumeLineFunc = ConsumeLine
 	}
@@ -219,7 +236,7 @@ func CreateFixedSizeTableFromFile(fst *FixedSizeTable, row *FixedRow, reader *io
 
 	fst.Row = row
 	fst.mem = memory.NewGoAllocator()
-	fst.Schema = nil //  TODO createSchemaFromFixedRow(row)
+	fst.Schema = createSchemaFromFixedRow(*fst)
 
 	fst.wg = &sync.WaitGroup{}
 
@@ -230,14 +247,23 @@ func CreateFixedSizeTableFromFile(fst *FixedSizeTable, row *FixedRow, reader *io
 	return nil
 }
 
-func createSchemaFromFixedRow(row *FixedRow) *arrow.Schema {
-	var fields []arrow.Field
-	fields = make([]arrow.Field, len(row.FixedField))
+func createSchemaFromFixedRow(fst FixedSizeTable) []arrow.Schema {
+	var pos int
+	var res []arrow.Schema
 
-	for index, element := range row.FixedField {
-		fields[index] = element.DestinField
+	res = make([]arrow.Schema, len(fst.TableColAmount))
+
+	for i, len := range fst.TableColAmount {
+
+		var fields []arrow.Field
+		fields = make([]arrow.Field, len)
+
+		for index, element := range fst.Row.FixedField[pos : pos+len] {
+			fields[index] = element.DestinField
+		}
+		res[i] = *arrow.NewSchema(fields, nil)
 	}
-	return arrow.NewSchema(fields, nil)
+	return res
 }
 
 //  unsigned char glyph=(unsigned char)195;
