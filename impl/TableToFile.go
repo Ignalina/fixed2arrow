@@ -31,15 +31,20 @@ import (
 
 func SaveToParquet(fst *FixedSizeTable, writer io.Writer) error {
 	startWaitDoneExport := time.Now()
+	var err error
 
-	tbl := array.NewTableFromRecords(&fst.Schema[0], fst.Records[0])
+	for i := 0; i < len(fst.Schema); i++ {
 
-	i := int64(len(fst.TableChunks[0].Bytes))
+		tbl := array.NewTableFromRecords(&fst.Schema[i], fst.Records[i])
 
-	props := parquet.NewWriterProperties(parquet.WithDictionaryDefault(false), parquet.WithCompression(compress.Codecs.Snappy))
-	arrProps := pqarrow.DefaultWriterProps()
+		i := int64(len(fst.TableChunks[0].Bytes))
 
-	err := pqarrow.WriteTable(tbl, writer, i, props, arrProps)
+		props := parquet.NewWriterProperties(parquet.WithDictionaryDefault(false), parquet.WithCompression(compress.Codecs.Snappy))
+		arrProps := pqarrow.DefaultWriterProps()
+
+		err = pqarrow.WriteTable(tbl, writer, i, props, arrProps)
+	}
+
 	fst.DurationDoneExport = time.Since(startWaitDoneExport)
 	return err
 }

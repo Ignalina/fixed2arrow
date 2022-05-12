@@ -191,7 +191,7 @@ func (f *FixedSizeTableChunk) createColumBuilders() bool {
 	tca := 0
 
 	for i, ff := range f.FixedSizeTable.Row.FixedField {
-		if (0 == tca) {
+		if 0 == tca {
 			index++
 			tca = f.FixedSizeTable.TableColAmount[index]
 		}
@@ -347,11 +347,14 @@ func ParalizeChunks(fst *FixedSizeTable, reader *io.Reader, size int64, core int
 	fst.wg.Wait()
 
 	//	var r []array.Record=make([]array.Record, len(fst.TableChunks))
-	fst.Records[0] = make([]arrow.Record, len(fst.TableChunks))
+	fst.Records = make([][]arrow.Record, chunkNr)
 
 	for i, num := range fst.TableChunks {
-		fst.Records[i][0] = num.Record[0] // TODO
+		fst.Records[i] = make([]arrow.Record, len(fst.TableColAmount))
+		for j := 0; j < len(fst.TableColAmount); j++ {
 
+			fst.Records[i][j] = num.Record[j] // TODO
+		}
 	}
 
 	// Sum up some statitics
@@ -410,7 +413,13 @@ func (fstc *FixedSizeTableChunk) process(lfHeader bool, lfFooter bool) int {
 		lineCnt--
 	}
 
-	fstc.Record[0] = fstc.RecordBuilder[0].NewRecord()
+	//#	fstc.Record[0] = fstc.RecordBuilder[0].NewRecord()
+	for _, rb := range fstc.RecordBuilder {
+		fstc.Record = append(fstc.Record, rb.NewRecord())
+	}
+
+	//	fstc.Record=append(fstc.Record,)
+	//	fstc.Record[0] = fstc.RecordBuilder[0].NewRecord()
 
 	fstc.LinesParsed = lineCnt
 	fstc.DurationToArrow = time.Since(startToArrow)
