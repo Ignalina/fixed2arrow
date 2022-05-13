@@ -261,6 +261,7 @@ func createSchemaFromFixedRow(fst FixedSizeTable) []arrow.Schema {
 		for index, element := range fst.Row.FixedField[pos : pos+len] {
 			fields[index] = element.DestinField
 		}
+		pos+=len
 		res[i] = *arrow.NewSchema(fields, nil)
 	}
 	return res
@@ -347,13 +348,12 @@ func ParalizeChunks(fst *FixedSizeTable, reader *io.Reader, size int64, core int
 	fst.wg.Wait()
 
 	//	var r []array.Record=make([]array.Record, len(fst.TableChunks))
-	fst.Records = make([][]arrow.Record, chunkNr)
+	fst.Records = make([][]arrow.Record, len(fst.TableColAmount))
 
-	for i, num := range fst.TableChunks {
-		fst.Records[i] = make([]arrow.Record, len(fst.TableColAmount))
-		for j := 0; j < len(fst.TableColAmount); j++ {
-
-			fst.Records[i][j] = num.Record[j] // TODO
+	for i := 0; i < len(fst.TableColAmount); i++ {
+		fst.Records[i] = make([]arrow.Record, chunkNr)
+		for j := 0; j < len(fst.TableChunks); j++ {
+			fst.Records[i][j] = fst.TableChunks[j].Record[i] // TODO
 		}
 	}
 
