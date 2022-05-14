@@ -20,32 +20,23 @@
 package impl
 
 import (
-	"github.com/apache/arrow/go/v7/arrow"
-	"github.com/apache/arrow/go/v7/arrow/array"
-	"github.com/apache/arrow/go/v7/parquet"
-	"github.com/apache/arrow/go/v7/parquet/compress"
-	"github.com/apache/arrow/go/v7/parquet/pqarrow"
+	"github.com/apache/arrow/go/v8/arrow"
+	"github.com/apache/arrow/go/v8/arrow/array"
+	"github.com/apache/arrow/go/v8/parquet"
+	"github.com/apache/arrow/go/v8/parquet/compress"
+	"github.com/apache/arrow/go/v8/parquet/pqarrow"
 	"io"
-	"time"
 )
 
-func SaveToParquet(fst *FixedSizeTable, writer io.Writer) error {
-	startWaitDoneExport := time.Now()
+func SaveToParquet(schema *arrow.Schema , record []arrow.Record,writer io.Writer, i int64) error {
 	var err error
 
-	for i := 0; i < len(fst.Schema); i++ {
+	props := parquet.NewWriterProperties(parquet.WithDictionaryDefault(false), parquet.WithCompression(compress.Codecs.Snappy))
+	arrProps := pqarrow.DefaultWriterProps()
+	tbl := array.NewTableFromRecords(schema, record)
 
-		tbl := array.NewTableFromRecords(&fst.Schema[i], fst.Records[i])
+	err = pqarrow.WriteTable(tbl, writer, i, props, arrProps)
 
-		i := int64(len(fst.TableChunks[0].Bytes))
-
-		props := parquet.NewWriterProperties(parquet.WithDictionaryDefault(false), parquet.WithCompression(compress.Codecs.Snappy))
-		arrProps := pqarrow.DefaultWriterProps()
-
-		err = pqarrow.WriteTable(tbl, writer, i, props, arrProps)
-	}
-
-	fst.DurationDoneExport = time.Since(startWaitDoneExport)
 	return err
 }
 

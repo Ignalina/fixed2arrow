@@ -23,10 +23,10 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"github.com/apache/arrow/go/v7/arrow"
-	"github.com/apache/arrow/go/v7/arrow/array"
-	"github.com/apache/arrow/go/v7/arrow/ipc"
-	"github.com/apache/arrow/go/v7/arrow/memory"
+	"github.com/apache/arrow/go/v8/arrow"
+	"github.com/apache/arrow/go/v8/arrow/array"
+	"github.com/apache/arrow/go/v8/arrow/ipc"
+	"github.com/apache/arrow/go/v8/arrow/memory"
 	"golang.org/x/exp/maps"
 	"golang.org/x/text/encoding/charmap"
 	"golang.org/x/text/transform"
@@ -187,18 +187,19 @@ func (f *FixedSizeTableChunk) createColumBuilders() bool {
 	for i := 0; i < len(f.FixedSizeTable.TableColAmount); i++ {
 		f.RecordBuilder[i] = array.NewRecordBuilder(f.FixedSizeTable.mem, &f.FixedSizeTable.Schema[i])
 	}
-	index := -1
+	tableIndex := -1
 	tca := 0
 
+	var fieldNr int
 	for i, ff := range f.FixedSizeTable.Row.FixedField {
 		if 0 == tca {
-			index++
-			tca = f.FixedSizeTable.TableColAmount[index]
+			tableIndex++
+			tca = f.FixedSizeTable.TableColAmount[tableIndex]
+			fieldNr = 0
 		}
+		f.ColumnBuilders[i] = *CreateColumBuilder(&ff, f.RecordBuilder[tableIndex], ff.Len, fieldNr, f.FixedSizeTable.ColumnsizeCap)
 		tca--
-
-		f.ColumnBuilders[i] = *CreateColumBuilder(&ff, f.RecordBuilder[index], ff.Len, i, f.FixedSizeTable.ColumnsizeCap)
-
+		fieldNr++
 	}
 	return true
 }
@@ -261,7 +262,7 @@ func createSchemaFromFixedRow(fst FixedSizeTable) []arrow.Schema {
 		for index, element := range fst.Row.FixedField[pos : pos+len] {
 			fields[index] = element.DestinField
 		}
-		pos+=len
+		pos += len
 		res[i] = *arrow.NewSchema(fields, nil)
 	}
 	return res
