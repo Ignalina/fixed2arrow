@@ -484,6 +484,57 @@ func DateStringT1ToUnix(dateString string) (error, int64) {
 
 }
 
+// 2000-05-13-09.00.00.000000
+func DateStringT1ToUnixNano(dateString string) (error, int64) {
+
+	var year64, month64, day64, hour64, minute64, second64, nano64 int64
+	var err error
+
+	year64, err = strconv.ParseInt(dateString[:4], 10, 32)
+
+	if nil != err {
+		return err, 0
+	}
+
+	month64, err = strconv.ParseInt(dateString[5:7], 10, 8)
+
+	if nil != err {
+		return err, 0
+	}
+
+	day64, err = strconv.ParseInt(dateString[8:10], 10, 8)
+	if nil != err {
+		return err, 0
+	}
+
+	hour64, err = strconv.ParseInt(dateString[11:13], 10, 8)
+	if nil != err {
+		return err, 0
+	}
+
+	minute64, err = strconv.ParseInt(dateString[14:16], 10, 8)
+	if nil != err {
+		return err, 0
+	}
+
+	second64, err = strconv.ParseInt(dateString[17:19], 10, 8)
+	if nil != err {
+		return err, 0
+	}
+
+	nano64, err = strconv.ParseInt(dateString[17:19], 10, 24)
+	if nil != err {
+		return err, 0
+	}
+
+	var ti time.Time
+
+	ti = time.Date(int(year64), time.Month(month64), int(day64), int(hour64), int(minute64), int(second64), int(nano64), lo)
+
+	return nil, ti.Unix()
+
+}
+
 func IsError(err error) bool {
 	if err != nil {
 		fmt.Println(err.Error())

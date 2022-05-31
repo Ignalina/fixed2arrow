@@ -35,7 +35,7 @@ type ColumnBuilderDate64 struct {
 func (c *ColumnBuilderDate64) ParseValue(name string) bool {
 	result := true
 
-	err, t := DateStringT1ToUnix(name)
+	err, t := DateStringT1ToUnixNano(name)
 	if nil != err {
 		result = false
 	}
