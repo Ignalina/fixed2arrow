@@ -35,11 +35,11 @@ type ColumnBuilderDate64 struct {
 func (c *ColumnBuilderDate64) ParseValue(name string) bool {
 	result := true
 
-	err, t := DateStringT1ToUnixNano(name)
+	err, ti := DateStringT1ToUnixNano(name)
 	if nil != err {
 		result = false
 	}
-	c.values = append(c.values, arrow.Date64(t))
+	c.values = append(c.values, arrow.Date64FromTime(ti))
 	c.valid = append(c.valid, true)
 
 	return result
@@ -51,6 +51,6 @@ func (c *ColumnBuilderDate64) FinishColumn() bool {
 }
 
 func (c *ColumnBuilderDate64) Nullify() {
-	c.values = append(c.values, 0)
+	c.values = append(c.values, arrow.Date64(0))
 	c.valid = append(c.valid, false)
 }
