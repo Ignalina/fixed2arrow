@@ -30,15 +30,15 @@ func PrintPerfomance(elapsed time.Duration, fst *FixedSizeTable) {
 }
 
 type Substring struct {
-	runeLen int
-	sub     string
+	RuneLen int
+	Sub     string
 }
 
 func CreateSubstring(fst *FixedSizeTable) []Substring {
 
 	substring := make([]Substring, len(fst.Row.FixedField))
 	for ci, cc := range fst.Row.FixedField {
-		substring[ci].runeLen = cc.Len
+		substring[ci].RuneLen = cc.Len
 	}
 
 	return substring
@@ -55,9 +55,9 @@ func GetSplitBytePositions(fullString string, substring []Substring) {
 
 		for bytePos, runan := range fullString[firstByte:lastByte] {
 			runeLen++
-			if runeLen == s.runeLen {
+			if runeLen == s.RuneLen {
 				pos := firstByte + bytePos + utf8.RuneLen(runan)
-				substring[is].sub = fullString[firstByte:pos]
+				substring[is].Sub = fullString[firstByte:pos]
 				firstByte = pos
 				break
 			}
