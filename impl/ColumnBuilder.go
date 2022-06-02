@@ -77,7 +77,7 @@ type FixedSizeTable struct {
 	Footer               string
 	HasHeader            bool
 	HasFooter            bool
-	ConsumeLineFunc      func(line string, fstc *FixedSizeTableChunk)
+	ConsumeLineFunc      func(line string, fstc *FixedSizeTableChunk, substring *[]Substring)
 	CustomParams         interface{}
 	CustomColumnBuilders map[arrow.Type]func(fixedField *FixedField, builder *array.RecordBuilder, columnsize int, fieldNr int, columnsizeCap int) *ColumnBuilder
 
@@ -382,6 +382,7 @@ func (fstc *FixedSizeTableChunk) process(lfHeader bool, lfFooter bool) int {
 	} else {
 		bbb = fstc.Bytes
 	}
+	substring := CreateSubstring(fstc.FixedSizeTable)
 
 	re := bytes.NewReader(bbb)
 	decodingReader := transform.NewReader(re, charmap.ISO8859_1.NewDecoder()) //   lines := []string{}
@@ -397,7 +398,9 @@ func (fstc *FixedSizeTableChunk) process(lfHeader bool, lfFooter bool) int {
 			continue
 		}
 
-		fstc.FixedSizeTable.ConsumeLineFunc(line, fstc)
+		GetSplitBytePositions(line, substring)
+
+		fstc.FixedSizeTable.ConsumeLineFunc(line, fstc, &substring)
 		//		fstc.consumeLine(line)
 
 	}
@@ -427,7 +430,7 @@ func (fstc *FixedSizeTableChunk) process(lfHeader bool, lfFooter bool) int {
 	return lineCnt
 }
 
-func ConsumeLine(line string, fstc *FixedSizeTableChunk) {
+func ConsumeLine(line string, fstc *FixedSizeTableChunk, substring *[]Substring) {
 	var columnPos int
 	for ci, cc := range fstc.FixedSizeTable.Row.FixedField {
 		columString := line[columnPos : columnPos+cc.Len]
