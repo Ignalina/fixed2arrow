@@ -40,7 +40,7 @@ func (c *ColumnBuilderDate64) ParseValue(name string) bool {
 		result = false
 	}
 	c.values = append(c.values, arrow.Date64FromTime(ti))
-	c.valid = append(c.valid, true)
+	c.valid = append(c.valid, result)
 
 	return result
 }

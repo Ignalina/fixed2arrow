@@ -42,7 +42,7 @@ func (c *ColumnBuilderDate32) ParseValue(name string) bool {
 	}
 
 	c.values = append(c.values, arrow.Date32(t))
-	c.valid = append(c.valid, true)
+	c.valid = append(c.valid, result)
 
 	return result
 }
