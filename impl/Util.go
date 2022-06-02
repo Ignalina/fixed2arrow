@@ -32,6 +32,7 @@ func PrintPerfomance(elapsed time.Duration, fst *FixedSizeTable) {
 type Substring struct {
 	RuneLen int
 	Sub     string
+	null    bool
 }
 
 func CreateSubstring(fst *FixedSizeTable) []Substring {
