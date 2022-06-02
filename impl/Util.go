@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/inhies/go-bytesize"
 	"time"
+	"unicode/utf8"
 )
 
 func PrintPerfomance(elapsed time.Duration, fst *FixedSizeTable) {
@@ -26,4 +27,41 @@ func PrintPerfomance(elapsed time.Duration, fst *FixedSizeTable) {
 	fmt.Println("Time spent toArrow       :", toAvro, "s")
 	fmt.Println("Time spent WaitDoneExport      :", fst.DurationDoneExport.Seconds(), "s")
 
+}
+
+type Substring struct {
+	runeLen int
+	sub     string
+}
+
+func CreateSubstring(fst *FixedSizeTable) []Substring {
+
+	substring := make([]Substring, len(fst.Row.FixedField))
+	for ci, cc := range fst.Row.FixedField {
+		substring[ci].runeLen = cc.Len
+	}
+
+	return substring
+}
+
+func GetSplitBytePositions(fullString string, substring []Substring) {
+
+	var firstByte, lastByte int
+	lastByte = len(fullString)
+
+	for is, s := range substring {
+
+		var runeLen int
+
+		for bytePos, runan := range fullString[firstByte:lastByte] {
+			runeLen++
+			if runeLen == s.runeLen {
+				pos := firstByte + bytePos + utf8.RuneLen(runan)
+				substring[is].sub = fullString[firstByte:pos]
+				firstByte = pos
+				break
+			}
+		}
+
+	}
 }

@@ -66,7 +66,7 @@ func main() {
 
 	defer outFile.Close()
 
-	err = impl.SaveToParquet(nil, outFile, 0)
+	//	err = impl.SaveToParquet(nil, outFile, 0)
 
 	elapsed := time.Since(start)
 	fmt.Println("elapesed total=", elapsed)

@@ -28,12 +28,12 @@ import (
 	"io"
 )
 
-func SaveToParquet(schema *arrow.Schema, writer io.Writer, i int64) error {
+func SaveToParquet(schema *arrow.Schema, record []arrow.Record, writer io.Writer, i int64) error {
 	var err error
 
 	props := parquet.NewWriterProperties(parquet.WithDictionaryDefault(false), parquet.WithCompression(compress.Codecs.Snappy))
 	arrProps := pqarrow.DefaultWriterProps()
-	tbl := array.NewTableFromRecords(schema, nil)
+	tbl := array.NewTableFromRecords(schema, record)
 
 	err = pqarrow.WriteTable(tbl, writer, i, props, arrProps)
 
