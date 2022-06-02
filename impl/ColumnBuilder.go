@@ -522,7 +522,7 @@ func DateStringT1ToUnixNano(dateString string) (error, int64) {
 		return err, 0
 	}
 
-	nano64, err = strconv.ParseInt(dateString[17:19], 10, 24)
+	nano64, err = strconv.ParseInt(dateString[20:26], 10, 24)
 	if nil != err {
 		return err, 0
 	}
