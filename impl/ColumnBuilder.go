@@ -22,6 +22,7 @@ package impl
 import (
 	"bufio"
 	"bytes"
+	"crypto/sha256"
 	"fmt"
 	"github.com/apache/arrow/go/v8/arrow"
 	"github.com/apache/arrow/go/v8/arrow/array"
@@ -77,12 +78,14 @@ type FixedSizeTable struct {
 	Footer               string
 	HasHeader            bool
 	HasFooter            bool
+	CalcHash             bool
 	ConsumeLineFunc      func(line string, fstc *FixedSizeTableChunk)
 	CustomParams         interface{}
 	CustomColumnBuilders map[arrow.Type]func(fixedField *FixedField, builder *array.RecordBuilder, columnsize int, fieldNr int, columnsizeCap int) *ColumnBuilder
 
 	Cores              int
 	LinesParsed        int
+	Hash               []byte
 	DurationReadChunk  time.Duration
 	DurationToArrow    time.Duration
 	DurationToExport   time.Duration
@@ -311,7 +314,7 @@ func ParalizeChunks(fst *FixedSizeTable, reader *io.Reader, size int64, core int
 	chunkNr := 0
 	p1 := 0
 	p2 := 0
-
+	sha := sha256.New()
 	for goon {
 		var headerChunk, footerChunk bool
 
@@ -328,6 +331,11 @@ func ParalizeChunks(fst *FixedSizeTable, reader *io.Reader, size int64, core int
 		nread, _ := io.ReadFull(*reader, buf)
 		fst.TableChunks[chunkNr].DurationReadChunk = time.Since(startReadChunk)
 		buf = buf[:nread]
+
+		if fst.CalcHash {
+			sha.Write(buf)
+		}
+
 		goon = i2 < len(fst.Bytes)
 		p2 = i1 + findLastNL(buf)
 		fst.TableChunks[chunkNr].Bytes = fst.Bytes[p1:p2]
@@ -366,6 +374,10 @@ func ParalizeChunks(fst *FixedSizeTable, reader *io.Reader, size int64, core int
 		fst.LinesParsed += tableChunk.LinesParsed
 	}
 
+	// Finalize the SHA checksum
+	if fst.CalcHash {
+		fst.Hash = sha.Sum(nil)
+	}
 	return nil
 }
 
