@@ -298,6 +298,15 @@ func CreateColumBuilder(fixedField *FixedField, builder *array.RecordBuilder, co
 	return ColumnBuilders[fixedField.SourceType.ID()](fixedField, builder, columnsize, fieldNr, columnsizeCap)
 }
 
+func Release(fst *FixedSizeTable, i int) {
+	x := len(fst.Records[i])
+
+	for i := 1; i < x; i++ {
+		fst.TableChunks[i].RecordBuilder[x].Release()
+		fst.Records[i][x].Release()
+	}
+}
+
 func ParalizeChunks(fst *FixedSizeTable, reader *io.Reader, size int64, core int) error {
 
 	fst.Bytes = make([]byte, size)
