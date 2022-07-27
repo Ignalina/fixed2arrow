@@ -299,12 +299,15 @@ func CreateColumBuilder(fixedField *FixedField, builder *array.RecordBuilder, co
 }
 
 func Release(fst *FixedSizeTable, i int) {
-	x := len(fst.Records[i])
 
-	for i := 1; i < x; i++ {
-		fst.TableChunks[i].RecordBuilder[x].Release()
-		fst.Records[i][x].Release()
+	for j := 0; j < len(fst.Records[i]); j++ {
+		fst.Records[i][j].Release()
 	}
+
+	for j := 0; j < len(fst.TableChunks[i].RecordBuilder); j++ {
+		fst.TableChunks[i].RecordBuilder[j].Release()
+	}
+
 }
 
 func ParalizeChunks(fst *FixedSizeTable, reader *io.Reader, size int64, core int) error {
