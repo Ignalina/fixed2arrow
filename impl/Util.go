@@ -3,6 +3,7 @@ package impl
 import (
 	"fmt"
 	"github.com/inhies/go-bytesize"
+	"runtime"
 	"time"
 	"unicode/utf8"
 )
@@ -27,6 +28,21 @@ func PrintPerfomance(elapsed time.Duration, fst *FixedSizeTable) {
 	fmt.Println("Time spent toArrow       :", toAvro, "s")
 	fmt.Println("Time spent WaitDoneExport      :", fst.DurationDoneExport.Seconds(), "s")
 
+}
+
+// Borrowed this code from https://golangcode.com/print-the-current-memory-usage/
+func PrintMemUsage() {
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+	// For info on each, see: https://golang.org/pkg/runtime/#MemStats
+	fmt.Printf("Alloc = %v MiB", bToMb(m.Alloc))
+	fmt.Printf("\tTotalAlloc = %v MiB", bToMb(m.TotalAlloc))
+	fmt.Printf("\tSys = %v MiB", bToMb(m.Sys))
+	fmt.Printf("\tNumGC = %v\n", m.NumGC)
+}
+
+func bToMb(b uint64) uint64 {
+	return b / 1024 / 1024
 }
 
 type Substring struct {

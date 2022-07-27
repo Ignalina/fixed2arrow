@@ -37,6 +37,8 @@ func SaveToParquet(schema *arrow.Schema, record []arrow.Record, writer io.Writer
 
 	err = pqarrow.WriteTable(tbl, writer, i, props, arrProps)
 
+	tbl.Release()
+
 	return err
 }
 
