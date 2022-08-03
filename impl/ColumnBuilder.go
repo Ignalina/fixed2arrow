@@ -225,7 +225,7 @@ func SaveFeather(w *os.File, fst *FixedSizeTable) error {
 
 // Read chunks of file and process them in go route after each chunk read. Slow disk is non non zero disk like sans etc
 
-func CreateFixedSizeTableFromFile(fst *FixedSizeTable, row *FixedRow, reader *io.Reader, size int64, cores int) error {
+func CreateFixedSizeTableFromFile(fst *FixedSizeTable, row *FixedRow, reader *io.Reader, size int64) error {
 	if nil == fst.TableColAmount {
 		fst.TableColAmount = []int{len(row.FixedField)}
 	}
@@ -238,13 +238,17 @@ func CreateFixedSizeTableFromFile(fst *FixedSizeTable, row *FixedRow, reader *io
 		maps.Copy(ColumnBuilders, fst.CustomColumnBuilders)
 	}
 
+	if (size < 20480) { // No multicore for silly small files.
+		fst.Cores = 1
+	}
+
 	fst.Row = row
 	fst.mem = memory.NewGoAllocator()
 	fst.Schema = createSchemaFromFixedRow(*fst)
 
 	fst.wg = &sync.WaitGroup{}
 
-	ParalizeChunks(fst, reader, size, cores)
+	ParalizeChunks(fst, reader, size, fst.Cores)
 
 	//	defer tbl.Release()
 
@@ -315,15 +319,13 @@ func ReleaseRecordBuilders(fst *FixedSizeTable) {
 }
 func ParalizeChunks(fst *FixedSizeTable, reader *io.Reader, size int64, core int) error {
 
+	if (size < 10240) {
+		core = 1
+	}
 	fst.Bytes = make([]byte, size)
 	fst.TableChunks = make([]FixedSizeTableChunk, core)
 
 	chunkSize := size / int64(core)
-	rowlength := int64(fst.Row.CalRowLength())
-
-	if chunkSize < int64(rowlength) {
-		chunkSize = int64(rowlength)
-	}
 
 	goon := true
 	chunkNr := 0
