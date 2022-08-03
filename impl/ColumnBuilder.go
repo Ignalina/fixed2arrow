@@ -238,7 +238,7 @@ func CreateFixedSizeTableFromFile(fst *FixedSizeTable, row *FixedRow, reader *io
 		maps.Copy(ColumnBuilders, fst.CustomColumnBuilders)
 	}
 
-	if (size < 20480) { // No multicore for silly small files.
+	if size < 20480 { // No multicore for silly small files.
 		fst.Cores = 1
 	}
 
@@ -248,7 +248,7 @@ func CreateFixedSizeTableFromFile(fst *FixedSizeTable, row *FixedRow, reader *io
 
 	fst.wg = &sync.WaitGroup{}
 
-	ParalizeChunks(fst, reader, size, fst.Cores)
+	ParalizeChunks(fst, reader, size)
 
 	//	defer tbl.Release()
 
@@ -317,15 +317,12 @@ func ReleaseRecordBuilders(fst *FixedSizeTable) {
 		}
 	}
 }
-func ParalizeChunks(fst *FixedSizeTable, reader *io.Reader, size int64, core int) error {
+func ParalizeChunks(fst *FixedSizeTable, reader *io.Reader, size int64) error {
 
-	if (size < 10240) {
-		core = 1
-	}
 	fst.Bytes = make([]byte, size)
-	fst.TableChunks = make([]FixedSizeTableChunk, core)
+	fst.TableChunks = make([]FixedSizeTableChunk, fst.Cores)
 
-	chunkSize := size / int64(core)
+	chunkSize := size / int64(fst.Cores)
 
 	goon := true
 	chunkNr := 0
@@ -340,7 +337,7 @@ func ParalizeChunks(fst *FixedSizeTable, reader *io.Reader, size int64, core int
 
 		i1 := int(chunkSize) * chunkNr
 		i2 := int(chunkSize) * (chunkNr + 1)
-		if chunkNr == (core - 1) {
+		if chunkNr == (fst.Cores - 1) {
 			i2 = len(fst.Bytes)
 		}
 		buf := fst.Bytes[i1:i2]
