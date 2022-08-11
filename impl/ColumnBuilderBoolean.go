@@ -20,7 +20,7 @@
 package impl
 
 import (
-	"github.com/apache/arrow/go/v8/arrow/array"
+	"github.com/apache/arrow/go/v9/arrow/array"
 )
 
 type ColumnBuilderBoolean struct {

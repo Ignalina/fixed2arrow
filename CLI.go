@@ -21,7 +21,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/apache/arrow/go/v8/arrow"
+	"github.com/apache/arrow/go/v9/arrow"
 	"github.com/ignalina/fixed2arrow/impl"
 	"io"
 	"os"
