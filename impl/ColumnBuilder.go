@@ -505,7 +505,7 @@ func DateStringT1ToUnix(dateString string) (error, int64) {
 
 	var ti time.Time
 
-	ti = time.Date(int(year64), time.Month(month64), int(day64), int(hour64), int(minute64), int(second64), 0, time.UTC)
+	ti = time.Date(int(year64), time.Month(month64), int(day64), int(hour64), int(minute64), int(second64), 0, nil)
 
 	return nil, ti.Unix()
 
@@ -556,7 +556,7 @@ func DateStringT1ToUnixNano(dateString string) (error, time.Time) {
 
 	var ti time.Time
 
-	ti = time.Date(int(year64), time.Month(month64), int(day64), int(hour64), int(minute64), int(second64), int(nano64), time.UTC)
+	ti = time.Date(int(year64), time.Month(month64), int(day64), int(hour64), int(minute64), int(second64), int(nano64), nil)
 
 	return nil, ti
 
