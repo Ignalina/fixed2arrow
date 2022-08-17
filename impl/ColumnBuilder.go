@@ -512,6 +512,59 @@ func DateStringT1ToUnix(dateString string) (error, int64) {
 }
 
 // 2000-05-13-09.00.00.000000
+
+func DateStringT1ToUnixMicro(dateString string) (error, time.Time) {
+
+	var year64, month64, day64, hour64, minute64, second64, micro64, nano64 int64
+	var err error
+
+	year64, err = strconv.ParseInt(dateString[:4], 10, 32)
+
+	if nil != err {
+		return err, time.Time{}
+	}
+
+	month64, err = strconv.ParseInt(dateString[5:7], 10, 8)
+
+	if nil != err {
+		return err, time.Time{}
+	}
+
+	day64, err = strconv.ParseInt(dateString[8:10], 10, 8)
+	if nil != err {
+		return err, time.Time{}
+	}
+
+	hour64, err = strconv.ParseInt(dateString[11:13], 10, 8)
+	if nil != err {
+		return err, time.Time{}
+	}
+
+	minute64, err = strconv.ParseInt(dateString[14:16], 10, 8)
+	if nil != err {
+		return err, time.Time{}
+	}
+
+	second64, err = strconv.ParseInt(dateString[17:19], 10, 8)
+	if nil != err {
+		return err, time.Time{}
+	}
+
+	micro64, err = strconv.ParseInt(dateString[20:26], 10, 24)
+	if nil != err {
+		return err, time.Time{}
+	}
+
+	nano64 = micro64 * 1000
+	var ti time.Time
+
+	ti = time.Date(int(year64), time.Month(month64), int(day64), int(hour64), int(minute64), int(second64), int(nano64), time.UTC)
+
+	return nil, ti
+
+}
+
+// 2000-05-13-09.00.00.000000000
 func DateStringT1ToUnixNano(dateString string) (error, time.Time) {
 
 	var year64, month64, day64, hour64, minute64, second64, nano64 int64
@@ -549,7 +602,7 @@ func DateStringT1ToUnixNano(dateString string) (error, time.Time) {
 		return err, time.Time{}
 	}
 
-	nano64, err = strconv.ParseInt(dateString[20:26], 10, 24)
+	nano64, err = strconv.ParseInt(dateString[20:29], 10, 24)
 	if nil != err {
 		return err, time.Time{}
 	}
