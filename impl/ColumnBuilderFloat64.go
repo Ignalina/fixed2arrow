@@ -33,7 +33,13 @@ type ColumnBuilderFloat64 struct {
 }
 
 func (c *ColumnBuilderFloat64) ParseValue(name string) bool {
-	f, _ := strconv.ParseFloat(name, 64)
+
+	f, err := strconv.ParseFloat(name, 64)
+	if nil != err {
+		c.Nullify()
+		return false
+	}
+
 	c.values = append(c.values, f)
 	c.valid = append(c.valid, true)
 

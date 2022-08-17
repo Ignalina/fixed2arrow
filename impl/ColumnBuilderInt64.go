@@ -34,7 +34,12 @@ type ColumnBuilderInt64 struct {
 
 func (c *ColumnBuilderInt64) ParseValue(name string) bool {
 
-	i, _ := strconv.ParseInt(name, 10, 64)
+	i, err := strconv.ParseInt(name, 10, 64)
+	if nil != err {
+		c.Nullify()
+		return false
+	}
+
 	c.values = append(c.values, i)
 	c.valid = append(c.valid, true)
 	return true

@@ -33,7 +33,13 @@ type ColumnBuilderInt8 struct {
 }
 
 func (c *ColumnBuilderInt8) ParseValue(name string) bool {
-	u, _ := strconv.ParseInt(name, 10, 8)
+	u, err := strconv.ParseInt(name, 10, 8)
+
+	if nil != err {
+		c.Nullify()
+		return false
+	}
+
 	c.values = append(c.values, int8(u))
 	c.valid = append(c.valid, true)
 

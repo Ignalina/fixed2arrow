@@ -60,7 +60,7 @@ func (c *ColumnBuilderBoolean) ParseValue(name string) bool {
 		ourBool = false
 		break
 	default:
-		c.values = append(c.values, ourBool)
+		c.values = append(c.values, false)
 		c.valid = append(c.valid, false)
 		return false
 	}

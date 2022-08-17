@@ -33,7 +33,13 @@ type ColumnBuilderUint16 struct {
 }
 
 func (c *ColumnBuilderUint16) ParseValue(name string) bool {
-	u, _ := strconv.ParseUint(name, 10, 16)
+	u, err := strconv.ParseUint(name, 10, 16)
+
+	if nil != err {
+		c.Nullify()
+		return false
+	}
+
 	c.values = append(c.values, uint16(u))
 	c.valid = append(c.valid, true)
 

@@ -34,17 +34,16 @@ type ColumnBuilderDate32 struct {
 
 func (c *ColumnBuilderDate32) ParseValue(name string) bool {
 
-	result := true
-
 	err, t := DateStringT1ToUnix(name)
 	if nil != err {
-		result = false
+		c.Nullify()
+		return false
 	}
 
 	c.values = append(c.values, arrow.Date32(t))
-	c.valid = append(c.valid, result)
+	c.valid = append(c.valid, true)
 
-	return result
+	return true
 }
 
 func (c *ColumnBuilderDate32) FinishColumn() bool {
