@@ -249,8 +249,10 @@ func CreateFixedSizeTableFromFile(fst *FixedSizeTable, row *FixedRow, reader *io
 
 	fst.wg = &sync.WaitGroup{}
 
-	ParalizeChunks(fst, reader, size)
-
+	err := ParalizeChunks(fst, reader, size)
+	if nil != err {
+		return err
+	}
 	//	defer tbl.Release()
 
 	return nil
