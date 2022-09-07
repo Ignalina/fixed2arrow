@@ -23,6 +23,7 @@ import (
 	"bufio"
 	"bytes"
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"github.com/apache/arrow/go/v9/arrow"
 	"github.com/apache/arrow/go/v9/arrow/array"
@@ -318,7 +319,6 @@ func ReleaseRecordBuilders(fst *FixedSizeTable) {
 	}
 }
 func ParalizeChunks(fst *FixedSizeTable, reader *io.Reader, size int64) error {
-
 	fst.Bytes = make([]byte, size)
 	fst.TableChunks = make([]FixedSizeTableChunk, fst.Cores)
 
@@ -342,7 +342,11 @@ func ParalizeChunks(fst *FixedSizeTable, reader *io.Reader, size int64) error {
 		}
 		buf := fst.Bytes[i1:i2]
 		startReadChunk := time.Now()
-		nread, _ := io.ReadFull(*reader, buf)
+		nread, err := io.ReadFull(*reader, buf)
+		if nil != err {
+			return err
+		}
+
 		fst.TableChunks[chunkNr].DurationReadChunk = time.Since(startReadChunk)
 		buf = buf[:nread]
 
@@ -351,7 +355,11 @@ func ParalizeChunks(fst *FixedSizeTable, reader *io.Reader, size int64) error {
 		}
 
 		goon = i2 < len(fst.Bytes)
-		p2 = i1 + findLastNL(buf)
+		i_last_nl := findLastNL(buf)
+		if i_last_nl == -1 {
+			return errors.New("no data..check config")
+		}
+		p2 = i1 + i_last_nl
 		fst.TableChunks[chunkNr].Bytes = fst.Bytes[p1:p2]
 		p1 = p2
 
