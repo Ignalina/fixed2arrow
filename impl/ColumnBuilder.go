@@ -36,6 +36,7 @@ import (
 	"io"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -80,6 +81,7 @@ type FixedSizeTable struct {
 	HasHeader            bool
 	HasFooter            bool
 	CalcHash             bool
+	SourceEncoding       string
 	ConsumeLineFunc      func(line string, fstc *FixedSizeTableChunk)
 	CustomParams         interface{}
 	CustomColumnBuilders map[arrow.Type]func(fixedField *FixedField, builder *array.RecordBuilder, columnsize int, fieldNr int, columnsizeCap int) *ColumnBuilder
@@ -420,9 +422,17 @@ func (fstc *FixedSizeTableChunk) process(lfHeader bool, lfFooter bool) int {
 	}
 
 	re := bytes.NewReader(bbb)
-	decodingReader := transform.NewReader(re, charmap.ISO8859_1.NewDecoder()) //   lines := []string{}
+	var scanner bufio.Scanner
 
-	scanner := bufio.NewScanner(decodingReader)
+	switch strings.ToLower(fstc.FixedSizeTable.SourceEncoding) {
+	case "iso8859-1":
+		scanner = *bufio.NewScanner(transform.NewReader(re, charmap.ISO8859_1.NewDecoder()))
+
+	case "utf-8":
+		scanner = *bufio.NewScanner(re)
+	default:
+		scanner = *bufio.NewScanner(re)
+	}
 	lineCnt := 0
 	for scanner.Scan() {
 		line := scanner.Text()
