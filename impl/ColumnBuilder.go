@@ -233,7 +233,9 @@ func CreateFixedSizeTableFromFile(fst *FixedSizeTable, row *FixedRow, reader *io
 
 	if nil == fst.FindLastNL && strings.ToLower(fst.SourceEncoding) == "utf-8" {
 		fst.FindLastNL = FindLastNL_NO_CR
+		fmt.Println("NO CR for eol")
 	} else if nil == fst.FindLastNL {
+		fmt.Println("NLCR for eol")
 		fst.FindLastNL = FindLastNLCR
 	}
 
