@@ -83,6 +83,7 @@ type FixedSizeTable struct {
 	CalcHash             bool
 	SourceEncoding       string
 	ConsumeLineFunc      func(line string, fstc *FixedSizeTableChunk)
+	FindLastNL           func(bytes []byte) int
 	CustomParams         interface{}
 	CustomColumnBuilders map[arrow.Type]func(fixedField *FixedField, builder *array.RecordBuilder, columnsize int, fieldNr int, columnsizeCap int) *ColumnBuilder
 
@@ -229,6 +230,12 @@ func SaveFeather(w *os.File, fst *FixedSizeTable) error {
 // Read chunks of file and process them in go route after each chunk read. Slow disk is non non zero disk like sans etc
 
 func CreateFixedSizeTableFromFile(fst *FixedSizeTable, row *FixedRow, reader *io.Reader, size int64) error {
+	if strings.ToLower(fst.SourceEncoding) == "utf-8" {
+		fst.FindLastNL = FindLastNL_NO_CR
+	} else {
+		fst.FindLastNL = FindLastNLCR
+	}
+
 	if nil == fst.TableColAmount {
 		fst.TableColAmount = []int{len(row.FixedField)}
 	}
@@ -280,8 +287,7 @@ func createSchemaFromFixedRow(fst FixedSizeTable) []arrow.Schema {
 	return res
 }
 
-//  unsigned char glyph=(unsigned char)195;
-func findLastNL(bytes []byte) int {
+func FindLastNLCR(bytes []byte) int {
 	p2 := len(bytes)
 	if 0 == p2 {
 		return -1
@@ -290,6 +296,22 @@ func findLastNL(bytes []byte) int {
 	for p2 > 0 {
 		if p2 < len(bytes) && bytes[p2-1] == 0x0d && bytes[p2] == 0x0a {
 			return p2 + 1
+		}
+		p2--
+	}
+
+	return 0
+}
+
+func FindLastNL_NO_CR(bytes []byte) int {
+	p2 := len(bytes)
+	if 0 == p2 {
+		return -1
+	}
+
+	for p2 > 0 {
+		if p2 < len(bytes) && bytes[p2] == 0x0a {
+			return p2
 		}
 		p2--
 	}
@@ -359,7 +381,7 @@ func ParalizeChunks(fst *FixedSizeTable, reader *io.Reader, size int64) error {
 		}
 
 		goon = i2 < len(fst.Bytes)
-		i_last_nl := findLastNL(buf)
+		i_last_nl := fst.FindLastNL(buf)
 		if i_last_nl == -1 {
 			return errors.New("no data..check config")
 		}
@@ -414,7 +436,7 @@ func (fstc *FixedSizeTableChunk) process(lfHeader bool, lfFooter bool) int {
 	var bbb []byte
 
 	if lfFooter {
-		p := findLastNL(fstc.Bytes)
+		p := fstc.FixedSizeTable.FindLastNL(fstc.Bytes)
 		fstc.FixedSizeTable.Footer = string(fstc.Bytes[p:])
 		bbb = fstc.Bytes[0:p]
 	} else {
