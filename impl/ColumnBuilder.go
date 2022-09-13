@@ -230,9 +230,10 @@ func SaveFeather(w *os.File, fst *FixedSizeTable) error {
 // Read chunks of file and process them in go route after each chunk read. Slow disk is non non zero disk like sans etc
 
 func CreateFixedSizeTableFromFile(fst *FixedSizeTable, row *FixedRow, reader *io.Reader, size int64) error {
-	if strings.ToLower(fst.SourceEncoding) == "utf-8" {
+
+	if nil == fst.FindLastNL && strings.ToLower(fst.SourceEncoding) == "utf-8" {
 		fst.FindLastNL = FindLastNL_NO_CR
-	} else {
+	} else if nil == fst.FindLastNL {
 		fst.FindLastNL = FindLastNLCR
 	}
 
