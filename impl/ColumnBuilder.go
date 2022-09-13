@@ -312,7 +312,7 @@ func FindLastNL_NO_CR(bytes []byte) int {
 
 	for p2 > 0 {
 		if p2 < len(bytes) && bytes[p2] == 0x0a {
-			return p2
+			return p2 + 1
 		}
 		p2--
 	}
