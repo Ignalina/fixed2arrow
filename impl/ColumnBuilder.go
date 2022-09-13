@@ -309,6 +309,7 @@ func FindLastNLCR(bytes []byte) int {
 func FindLastNL_NO_CR(bytes []byte) int {
 	p2 := len(bytes)
 	if 0 == p2 {
+		fmt.Println("FindLastNL_NO_CR got empty byte buffer!!!")
 		return -1
 	}
 
