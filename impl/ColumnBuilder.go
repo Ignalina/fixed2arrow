@@ -263,7 +263,6 @@ func CreateFixedSizeTableFromFile(fst *FixedSizeTable, row *FixedRow, reader *io
 	if nil != err {
 		return err
 	}
-	//	defer tbl.Release()
 
 	return nil
 }
