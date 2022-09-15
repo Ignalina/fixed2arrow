@@ -233,7 +233,9 @@ func CreateFixedSizeTableFromFile(fst *FixedSizeTable, row *FixedRow, reader *io
 
 	if nil == fst.FindLastNL && strings.ToLower(fst.SourceEncoding) == "utf-8" {
 		fst.FindLastNL = FindLastNL_NO_CR
+		fmt.Println("NO CR for eol")
 	} else if nil == fst.FindLastNL {
+		fmt.Println("NLCR for eol")
 		fst.FindLastNL = FindLastNLCR
 	}
 
@@ -306,12 +308,13 @@ func FindLastNLCR(bytes []byte) int {
 func FindLastNL_NO_CR(bytes []byte) int {
 	p2 := len(bytes)
 	if 0 == p2 {
+		fmt.Println("FindLastNL_NO_CR got empty byte buffer!!!")
 		return -1
 	}
 
 	for p2 > 0 {
 		if p2 < len(bytes) && bytes[p2] == 0x0a {
-			return p2
+			return p2 
 		}
 		p2--
 	}
