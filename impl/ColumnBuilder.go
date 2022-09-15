@@ -314,7 +314,7 @@ func FindLastNL_NO_CR(bytes []byte) int {
 
 	for p2 > 0 {
 		if p2 < len(bytes) && bytes[p2] == 0x0a {
-			return p2 
+			return p2
 		}
 		p2--
 	}
@@ -373,6 +373,7 @@ func ParalizeChunks(fst *FixedSizeTable, reader *io.Reader, size int64) error {
 		startReadChunk := time.Now()
 		nread, err := io.ReadFull(*reader, buf)
 		if nil != err {
+			fst.Bytes = nil
 			return err
 		}
 
@@ -386,6 +387,7 @@ func ParalizeChunks(fst *FixedSizeTable, reader *io.Reader, size int64) error {
 		goon = i2 < len(fst.Bytes)
 		i_last_nl := fst.FindLastNL(buf)
 		if i_last_nl == -1 {
+			fst.Bytes = nil
 			return errors.New("no data..check config")
 		}
 		p2 = i1 + i_last_nl
@@ -406,6 +408,7 @@ func ParalizeChunks(fst *FixedSizeTable, reader *io.Reader, size int64) error {
 		chunkNr++
 	}
 	fst.wg.Wait()
+	fst.Bytes = nil
 
 	//	var r []array.Record=make([]array.Record, len(fst.TableChunks))
 	fst.Records = make([][]arrow.Record, len(fst.TableColAmount))
