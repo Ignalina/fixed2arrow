@@ -31,7 +31,7 @@ import (
 func SaveToParquet(schema *arrow.Schema, record []arrow.Record, writer io.Writer, i int64) error {
 	var err error
 
-	props := parquet.NewWriterProperties(parquet.WithDictionaryDefault(false), parquet.WithCompression(compress.Codecs.Snappy))
+	props := parquet.NewWriterProperties(parquet.WithVersion(parquet.V2_LATEST),parquet.WithDictionaryDefault(false), parquet.WithCompression(compress.Codecs.Snappy))
 	arrProps := pqarrow.DefaultWriterProps()
 	tbl := array.NewTableFromRecords(schema, record)
 
