@@ -388,7 +388,7 @@ func ParalizeChunks(fst *FixedSizeTable, reader *io.Reader, size int64) error {
 		i_last_nl := fst.FindLastNL(buf)
 		if i_last_nl == -1 {
 			fst.Bytes = nil
-			return errors.New("no data..check config")
+			return errors.New("No line found..check data and config")
 		}
 		p2 = i1 + i_last_nl
 		fst.TableChunks[chunkNr].Bytes = fst.Bytes[p1:p2]
@@ -409,6 +409,12 @@ func ParalizeChunks(fst *FixedSizeTable, reader *io.Reader, size int64) error {
 	}
 	fst.wg.Wait()
 	fst.Bytes = nil
+
+	for chunkNrIndex := 0; chunkNrIndex < chunkNr; chunkNrIndex++ {
+		if (fst.TableChunks[chunkNrIndex].LinesParsed < 0) {
+			return errors.New("failed process at least one chunk")
+		}
+	}
 
 	//	var r []array.Record=make([]array.Record, len(fst.TableChunks))
 	fst.Records = make([][]arrow.Record, len(fst.TableColAmount))
@@ -435,7 +441,7 @@ func ParalizeChunks(fst *FixedSizeTable, reader *io.Reader, size int64) error {
 	return nil
 }
 
-func (fstc *FixedSizeTableChunk) process(lfHeader bool, lfFooter bool) int {
+func (fstc *FixedSizeTableChunk) process(lfHeader bool, lfFooter bool) {
 	startToArrow := time.Now()
 	defer fstc.FixedSizeTable.wg.Done()
 
@@ -443,6 +449,10 @@ func (fstc *FixedSizeTableChunk) process(lfHeader bool, lfFooter bool) int {
 
 	if lfFooter {
 		p := fstc.FixedSizeTable.FindLastNL(fstc.Bytes)
+		if (p < 0) {
+			fstc.LinesParsed = -1
+		}
+
 		fstc.FixedSizeTable.Footer = string(fstc.Bytes[p:])
 		bbb = fstc.Bytes[0:p]
 	} else {
@@ -472,7 +482,6 @@ func (fstc *FixedSizeTableChunk) process(lfHeader bool, lfFooter bool) int {
 		}
 
 		fstc.FixedSizeTable.ConsumeLineFunc(line, fstc)
-		//		fstc.consumeLine(line)
 
 	}
 	// TODO check scanner.err()
@@ -488,17 +497,12 @@ func (fstc *FixedSizeTableChunk) process(lfHeader bool, lfFooter bool) int {
 		lineCnt--
 	}
 
-	//#	fstc.Record[0] = fstc.RecordBuilder[0].NewRecord()
 	for _, rb := range fstc.RecordBuilder {
 		fstc.Record = append(fstc.Record, rb.NewRecord())
 	}
 
-	//	fstc.Record=append(fstc.Record,)
-	//	fstc.Record[0] = fstc.RecordBuilder[0].NewRecord()
-
 	fstc.LinesParsed = lineCnt
 	fstc.DurationToArrow = time.Since(startToArrow)
-	return lineCnt
 }
 
 // TODO fix for utf8 !!! this is only for Ascii/8851-9 one byte coded glyphs
