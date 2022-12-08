@@ -20,7 +20,7 @@
 package impl
 
 import (
-	"github.com/apache/arrow/go/v9/arrow/array"
+	"github.com/apache/arrow/go/v10/arrow/array"
 	"strconv"
 )
 

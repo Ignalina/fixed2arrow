@@ -20,18 +20,19 @@
 package impl
 
 import (
-	"github.com/apache/arrow/go/v9/arrow"
-	"github.com/apache/arrow/go/v9/arrow/array"
-	"github.com/apache/arrow/go/v9/parquet"
-	"github.com/apache/arrow/go/v9/parquet/compress"
-	"github.com/apache/arrow/go/v9/parquet/pqarrow"
+	"github.com/apache/arrow/go/v10/arrow"
+	"github.com/apache/arrow/go/v10/arrow/array"
+	"github.com/apache/arrow/go/v10/arrow/csv"
+	"github.com/apache/arrow/go/v10/parquet"
+	"github.com/apache/arrow/go/v10/parquet/compress"
+	"github.com/apache/arrow/go/v10/parquet/pqarrow"
 	"io"
 )
 
 func SaveToParquet(schema *arrow.Schema, record []arrow.Record, writer io.Writer, i int64) error {
 	var err error
 
-	props := parquet.NewWriterProperties(parquet.WithVersion(parquet.V2_LATEST),parquet.WithDictionaryDefault(false), parquet.WithCompression(compress.Codecs.Snappy))
+	props := parquet.NewWriterProperties(parquet.WithVersion(parquet.V2_LATEST), parquet.WithDictionaryDefault(false), parquet.WithCompression(compress.Codecs.Snappy))
 	arrProps := pqarrow.DefaultWriterProps()
 	tbl := array.NewTableFromRecords(schema, record)
 
@@ -44,4 +45,26 @@ func SaveToParquet(schema *arrow.Schema, record []arrow.Record, writer io.Writer
 
 func saveToFeather(sc *arrow.Schema, table *array.TableReader, w io.Writer) {
 
+}
+
+func SaveToCSV(schema *arrow.Schema, record []arrow.Record, writer io.Writer, i int64) error {
+
+	w := csv.NewWriter(writer, schema,
+		csv.WithComma(','),
+		csv.WithCRLF(false),
+		csv.WithHeader(false),
+		csv.WithNullWriter(""),
+		csv.WithBoolWriter(nil),
+	)
+	err := w.Write(record[0])
+	if err != nil {
+		return err
+	}
+
+	err = w.Flush()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -25,10 +25,10 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
-	"github.com/apache/arrow/go/v9/arrow"
-	"github.com/apache/arrow/go/v9/arrow/array"
-	"github.com/apache/arrow/go/v9/arrow/ipc"
-	"github.com/apache/arrow/go/v9/arrow/memory"
+	"github.com/apache/arrow/go/v10/arrow"
+	"github.com/apache/arrow/go/v10/arrow/array"
+	"github.com/apache/arrow/go/v10/arrow/ipc"
+	"github.com/apache/arrow/go/v10/arrow/memory"
 	"golang.org/x/exp/maps"
 	"golang.org/x/text/encoding/charmap"
 	"golang.org/x/text/transform"
@@ -411,7 +411,7 @@ func ParalizeChunks(fst *FixedSizeTable, reader *io.Reader, size int64) error {
 	fst.Bytes = nil
 
 	for chunkNrIndex := 0; chunkNrIndex < chunkNr; chunkNrIndex++ {
-		if (fst.TableChunks[chunkNrIndex].LinesParsed < 0) {
+		if fst.TableChunks[chunkNrIndex].LinesParsed < 0 {
 			return errors.New("failed process at least one chunk")
 		}
 	}
@@ -449,7 +449,7 @@ func (fstc *FixedSizeTableChunk) process(lfHeader bool, lfFooter bool) {
 
 	if lfFooter {
 		p := fstc.FixedSizeTable.FindLastNL(fstc.Bytes)
-		if (p < 0) {
+		if p < 0 {
 			fstc.LinesParsed = -1
 		}
 
