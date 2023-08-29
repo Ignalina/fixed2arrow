@@ -3,6 +3,7 @@
 fully parallelized Module that parses a fixed column sized file into Apache Arrow table.
 
 # Notes
+* Apache Arrow 13.0 now uses
 * Apache Arrow 9.0 now used.
 * Apache Arrow 8.0 Released with even more Go bindings !!
 * Apache Arrow 7.0 just released and give parquet functions via module  pqarrow.   
